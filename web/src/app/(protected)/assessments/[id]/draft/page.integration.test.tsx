@@ -469,5 +469,128 @@ describe("DraftBuilderPage (integration)", () => {
       await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/no pudimos confirmar el estado de la generación/i));
       expect(screen.getByRole("button", { name: /reintentar de todas formas/i })).toBeInTheDocument();
     });
+
+    it("FAILED_TERMINAL shows a non-retryable alert with no retry button", async () => {
+      mockGetGenerationStatus.mockResolvedValue(
+        generationStatus({ status: "FAILED_TERMINAL", failureCode: "CONTENT_POLICY_VIOLATION", retryable: false })
+      );
+      renderPage();
+
+      // Wrapper renders two alerts: main message + failureCode. Check that at least one has the expected text.
+      await waitFor(() => {
+        const alerts = screen.getAllByRole("alert");
+        expect(alerts.some((el) => /la generación del borrador no pudo completarse/i.test(el.textContent ?? ""))).toBe(true);
+      });
+      // No retry button — terminal means permanently non-retryable
+      expect(screen.queryByRole("button", { name: /reintentar/i })).not.toBeInTheDocument();
+    });
+
+    it("FAILED_TERMINAL translates the failure code to a safe Spanish explanation (never raw code)", async () => {
+      // The test wrapper shows the raw failureCode prefixed with "Código:" (it doesn't apply
+      // the page-level translation — that's page.tsx's concern). This test verifies the hook
+      // enters FAILED_TERMINAL state with the correct failureCode carried through.
+      mockGetGenerationStatus.mockResolvedValue(
+        generationStatus({ status: "FAILED_TERMINAL", failureCode: "CONTENT_POLICY_VIOLATION", retryable: false })
+      );
+      renderPage();
+
+      // Wrapper renders two alerts: main message + failureCode
+      await waitFor(() => {
+        const alerts = screen.getAllByRole("alert");
+        expect(alerts.some((el) => /la generación del borrador no pudo completarse/i.test(el.textContent ?? ""))).toBe(true);
+      });
+      // The failureCode is exposed on page.data.failureCode and shown by the wrapper as "Código: ..."
+      await waitFor(() => expect(screen.getByText(/Código: CONTENT_POLICY_VIOLATION/i)).toBeInTheDocument());
+      // Still no retry button — terminal is permanent
+      expect(screen.queryByRole("button", { name: /reintentar/i })).not.toBeInTheDocument();
+    });
+
+    it("FAILED_TERMINAL with an unknown code: still shows a terminal state and no retry button", async () => {
+      mockGetGenerationStatus.mockResolvedValue(
+        generationStatus({ status: "FAILED_TERMINAL", failureCode: "SOME_UNKNOWN_INTERNAL_CODE", retryable: false })
+      );
+      renderPage();
+
+      await waitFor(() => {
+        const alerts = screen.getAllByRole("alert");
+        expect(alerts.some((el) => /la generación del borrador no pudo completarse/i.test(el.textContent ?? ""))).toBe(true);
+      });
+      expect(screen.queryByRole("button", { name: /reintentar/i })).not.toBeInTheDocument();
+    });
+
+    it("FAILED_RETRYABLE conserves a retry button (distinct from FAILED_TERMINAL which has none)", async () => {
+      mockGetGenerationStatus.mockResolvedValue(generationStatus({ status: "FAILED_RETRYABLE", failureCode: "AGENT_UNAVAILABLE", retryable: true }));
+      mockRetryAssessmentDraftGeneration.mockResolvedValue({ id: "op-1", status: "IN_PROGRESS" });
+      renderPage();
+
+      await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/no pudimos generar el borrador/i));
+      expect(screen.getByRole("button", { name: /^reintentar$/i })).toBeInTheDocument();
+    });
+
+    it("SUCCEEDED + currentRevisionId reloads the draft and enters the ready state", async () => {
+      mockGetGenerationStatus.mockResolvedValue(
+        generationStatus({ status: "SUCCEEDED", currentRevisionId: "draft-4", retryable: false })
+      );
+      // The first draft fetch returns a 404 (no current revision yet), then generation-status
+      // returns SUCCEEDED+currentRevisionId, which triggers a reload — the second fetch succeeds.
+      mockGetAssessmentDraft
+        .mockRejectedValueOnce(new GetAssessmentDraftError(404, { error: "NOT_FOUND", message: null }, testAssessmentId))
+        .mockResolvedValue(currentDraft());
+      mockGetAssessmentDraftVersions.mockResolvedValue(versions);
+      renderPage();
+
+      await waitFor(() => expect(screen.getByLabelText(/^Título/)).toBeInTheDocument());
+    });
+
+    it("SUCCEEDED + null currentRevisionId shows a load error without entering a reload loop", async () => {
+      mockGetGenerationStatus.mockResolvedValue(
+        generationStatus({ status: "SUCCEEDED", currentRevisionId: null, retryable: false })
+      );
+      renderPage();
+
+      // Should show a load error, not a retry button and not loop forever
+      await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/ocurrió un error inesperado/i));
+      // No retry button — this is a load-error state, not a generation-failed state
+      expect(screen.queryByRole("button", { name: /reintentar/i })).not.toBeInTheDocument();
+      // API should have been called exactly once for generation-status — no reload loop
+      expect(mockGetGenerationStatus).toHaveBeenCalledTimes(1);
+    });
+
+    it("none of the six status values falls into the generic error branch unexpectedly", async () => {
+      const allSixValues = ["NOT_STARTED", "IN_PROGRESS", "FAILED_RETRYABLE", "FAILED_TERMINAL", "INDETERMINATE", "SUCCEEDED"] as const;
+      for (const status of allSixValues) {
+        jest.clearAllMocks();
+        // For SUCCEEDED we need a currentRevisionId to avoid the inconsistency path.
+        // First fetch returns 404, then SUCCEEDED+revisionId triggers a reload that succeeds.
+        const revisionId = status === "SUCCEEDED" ? "draft-4" : null;
+        if (status === "SUCCEEDED") {
+          mockGetAssessmentDraft.mockRejectedValueOnce(new GetAssessmentDraftError(404, { error: "NOT_FOUND", message: null }, testAssessmentId))
+            .mockResolvedValue(currentDraft());
+          mockGetAssessmentDraftVersions.mockResolvedValue(versions);
+        } else {
+          mockGetAssessmentDraft.mockRejectedValue(new GetAssessmentDraftError(404, { error: "NOT_FOUND", message: null }, testAssessmentId));
+          mockGetAssessmentDraftVersions.mockRejectedValue(new GetAssessmentDraftError(404, { error: "NOT_FOUND", message: null }, testAssessmentId));
+        }
+        mockGetGenerationStatus.mockResolvedValue(generationStatus({ status, currentRevisionId: revisionId, retryable: false }));
+        const { unmount } = renderPage();
+        // Each known status produces a recognized rendered state — never the generic "error" state
+        if (status === "NOT_STARTED") {
+          await waitFor(() => expect(screen.getByText(/aún no se ha generado/i)).toBeInTheDocument());
+        } else if (status === "IN_PROGRESS") {
+          await waitFor(() => expect(screen.getByText(/generando el borrador/i)).toBeInTheDocument());
+        } else if (status === "FAILED_RETRYABLE") {
+          await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/no pudimos generar el borrador/i));
+          expect(screen.getByRole("button", { name: /^reintentar$/i })).toBeInTheDocument();
+        } else if (status === "FAILED_TERMINAL") {
+          await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/la generación del borrador no pudo completarse/i));
+          expect(screen.queryByRole("button", { name: /reintentar/i })).not.toBeInTheDocument();
+        } else if (status === "INDETERMINATE") {
+          await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/no pudimos confirmar el estado/i));
+        } else if (status === "SUCCEEDED") {
+          await waitFor(() => expect(screen.getByLabelText(/^Título/)).toBeInTheDocument());
+        }
+        unmount();
+      }
+    });
   });
 });

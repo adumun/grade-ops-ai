@@ -16,8 +16,12 @@ interface DraftEditorSectionProps {
 // Authoritative provenance from the API (draft.origin/actorId), not a transient local label —
 // see docs/99-decisions/2026-07-28-authoring-operation-contract.md § 2/5/6 and
 // LOCAL-CONTRACTS.md's "ready" state note replacing the old generado-por-ia/version-actual pair.
+// LEGACY_UNKNOWN: historical records where the schema cannot confirm AI vs. human authorship.
+// actorId is nullable for both HUMAN_EDITED (when not recorded) and LEGACY_UNKNOWN (always null).
 function provenanceLabel(draft: AssessmentDraftViewModel): string {
   if (draft.origin === "AI_GENERATED") return "Generado por IA";
+  if (draft.origin === "LEGACY_UNKNOWN") return "Procedencia histórica no verificable";
+  // HUMAN_EDITED — actorId may be null when not recorded
   return draft.actorId ? `Editado por ${draft.actorId}` : "Editado manualmente";
 }
 

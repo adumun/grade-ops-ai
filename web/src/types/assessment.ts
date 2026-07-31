@@ -24,7 +24,10 @@ export interface CreateAssessmentBriefResponseDto {
 // origin/actorId/reason/previousRevisionId are authoritative provenance from the API —
 // see docs/99-decisions/2026-07-28-authoring-operation-contract.md § 2/5/6. Web renders
 // them as-is; it never derives or infers provenance locally.
-export type AssessmentRevisionOrigin = "AI_GENERATED" | "HUMAN_EDITED";
+// LEGACY_UNKNOWN: historical records where the schema did not preserve a reliable signal
+// distinguishing AI-generated from human-edited content. Rendered with a neutral label
+// ("Procedencia histórica no verificable") — never presented as AI or human authorship.
+export type AssessmentRevisionOrigin = "AI_GENERATED" | "HUMAN_EDITED" | "LEGACY_UNKNOWN";
 
 export interface AssessmentDraftDto {
   draftId: string;
@@ -71,9 +74,18 @@ export interface ApiConflictErrorResponse {
   message: string | null;
 }
 
-// Canonical values per LOCAL-CONTRACTS.md § Canonical status taxonomy. Use exactly these
-// spellings — never invent a client-side synonym.
-export type GenerationStatusValue = "NOT_STARTED" | "IN_PROGRESS" | "FAILED_RETRYABLE" | "INDETERMINATE";
+// Canonical values per LOCAL-CONTRACTS.md § Canonical status taxonomy and the six-value
+// taxonomy confirmed in Session D integration. Use exactly these spellings — never invent a
+// client-side synonym.
+// FAILED_TERMINAL: a permanent, non-retryable failure — no retry button is offered.
+// SUCCEEDED: generation completed successfully; currentRevisionId will be non-null.
+export type GenerationStatusValue =
+  | "NOT_STARTED"
+  | "IN_PROGRESS"
+  | "FAILED_RETRYABLE"
+  | "FAILED_TERMINAL"
+  | "INDETERMINATE"
+  | "SUCCEEDED";
 
 export interface GenerationStatusDto {
   operationType: string;

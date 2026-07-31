@@ -130,4 +130,54 @@ describe("DraftEditorSection", () => {
 
     expect(screen.getByText(/Editado por teacher-42/)).toBeInTheDocument();
   });
+
+  describe("LEGACY_UNKNOWN provenance", () => {
+    const legacyDraft = {
+      ...draft,
+      origin: "LEGACY_UNKNOWN" as const,
+      actorId: null,
+      reason: null,
+    };
+
+    it("mapper accepts LEGACY_UNKNOWN and renders a neutral provenance label", () => {
+      render(
+        <DraftEditorSection draft={legacyDraft} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={jest.fn()} />
+      );
+
+      expect(screen.getByText(/Procedencia histórica no verificable/i)).toBeInTheDocument();
+    });
+
+    it("does not show the AI label ('Generado por IA') for a LEGACY_UNKNOWN revision", () => {
+      render(
+        <DraftEditorSection draft={legacyDraft} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={jest.fn()} />
+      );
+
+      expect(screen.queryByText(/Generado por IA/i)).not.toBeInTheDocument();
+    });
+
+    it("does not show a human-edit label for a LEGACY_UNKNOWN revision", () => {
+      render(
+        <DraftEditorSection draft={legacyDraft} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={jest.fn()} />
+      );
+
+      expect(screen.queryByText(/Editado manualmente/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Editado por/i)).not.toBeInTheDocument();
+    });
+
+    it("renders without crashing when actorId is null (always null for LEGACY_UNKNOWN)", () => {
+      render(
+        <DraftEditorSection draft={{ ...legacyDraft, actorId: null }} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={jest.fn()} />
+      );
+
+      expect(screen.getByText(/Procedencia histórica no verificable/i)).toBeInTheDocument();
+    });
+
+    it("renders without crashing when reason is null (always null for LEGACY_UNKNOWN)", () => {
+      render(
+        <DraftEditorSection draft={{ ...legacyDraft, reason: null }} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={jest.fn()} />
+      );
+
+      expect(screen.getByText(/Procedencia histórica no verificable/i)).toBeInTheDocument();
+    });
+  });
 });

@@ -72,6 +72,12 @@ export interface GenerationFailedViewModel {
   onRetry: () => void;
 }
 
+// A permanent, non-retryable failure state. Distinct from GenerationFailedViewModel because
+// there is no onRetry — showing a retry button on a terminal failure would mislead the teacher.
+export interface GenerationFailedTerminalViewModel {
+  failureCode?: string;
+}
+
 export interface GenerationIndeterminateViewModel {
   isRetrying: boolean;
   retryError: string | null;
@@ -85,6 +91,7 @@ export type AssessmentDraftBuilderPageState =
   | { status: "generation-not-started"; data: GenerationNotStartedViewModel }
   | { status: "generation-in-progress" }
   | { status: "generation-failed"; data: GenerationFailedViewModel }
+  | { status: "generation-failed-terminal"; data: GenerationFailedTerminalViewModel }
   | { status: "generation-indeterminate"; data: GenerationIndeterminateViewModel }
   | { status: "ready"; data: AssessmentDraftBuilderPageViewModel };
 
@@ -170,6 +177,7 @@ type InternalPageState =
   | { status: "generation-not-started" }
   | { status: "generation-in-progress" }
   | { status: "generation-failed"; failureCode?: string }
+  | { status: "generation-failed-terminal"; failureCode?: string }
   | { status: "generation-indeterminate" }
   | { status: "ready"; data: AssessmentDraftBuilderPageData };
 
@@ -235,8 +243,19 @@ export function useAssessmentDraftBuilderPage(assessmentId: string): AssessmentD
         setPageState({ status: "generation-in-progress" });
       } else if (status === "FAILED_RETRYABLE") {
         setPageState({ status: "generation-failed", failureCode: generationStatus.failureCode });
+      } else if (status === "FAILED_TERMINAL") {
+        // Non-retryable permanent failure — no retry offered, different UI from FAILED_RETRYABLE.
+        setPageState({ status: "generation-failed-terminal", failureCode: generationStatus.failureCode });
       } else if (status === "INDETERMINATE") {
         setPageState({ status: "generation-indeterminate" });
+      } else if (status === "SUCCEEDED") {
+        // API reports SUCCEEDED but no currentRevisionId was returned — inconsistency that
+        // should not happen. Log context (no sensitive data) and treat as a recoverable load
+        // error to avoid an infinite reload loop.
+        console.warn(
+          `[DraftBuilderPage] generation-status SUCCEEDED but currentRevisionId is null for assessmentId=${assessmentId}. API inconsistency — treating as load error to avoid loop.`
+        );
+        setPageState({ status: "error", error: LOAD_ERROR_MESSAGE });
       } else {
         setPageState({ status: "error", error: LOAD_ERROR_MESSAGE });
       }
@@ -378,6 +397,13 @@ export function useAssessmentDraftBuilderPage(assessmentId: string): AssessmentD
     return {
       status: "generation-failed",
       data: { failureCode: pageState.failureCode, isRetrying, retryError, onRetry },
+    };
+  }
+  if (pageState.status === "generation-failed-terminal") {
+    // No onRetry — terminal means non-retryable, permanently.
+    return {
+      status: "generation-failed-terminal",
+      data: { failureCode: pageState.failureCode },
     };
   }
   if (pageState.status === "generation-indeterminate") {

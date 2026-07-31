@@ -61,6 +61,17 @@ export function DraftBuilderPageTestWrapper({ assessmentId }: { assessmentId: st
     );
   }
 
+  // A permanent, non-retryable failure — no retry button, distinct from generation-failed.
+  // Must be handled before the catch-all ready block below (same as page.tsx).
+  if (page.status === "generation-failed-terminal") {
+    return (
+      <div>
+        <p role="alert">La generación del borrador no pudo completarse.</p>
+        {page.data.failureCode && <p role="alert">{`Código: ${page.data.failureCode}`}</p>}
+      </div>
+    );
+  }
+
   if (page.status === "generation-indeterminate") {
     return (
       <div>

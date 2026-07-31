@@ -106,4 +106,47 @@ describe("VersionHistorySection", () => {
     // v3/v2/v1 are AI_GENERATED
     expect(screen.getAllByText("IA")).toHaveLength(3);
   });
+
+  describe("LEGACY_UNKNOWN provenance", () => {
+    const legacyVersion: AssessmentDraftVersionViewModel = {
+      versionNumber: 1,
+      isCurrent: true,
+      previewLabel: "v1 (actual)",
+      titlePreview: "Evaluación legacy importada",
+      origin: "LEGACY_UNKNOWN",
+      actorId: null,
+      reason: null,
+      previousRevisionId: null,
+    };
+
+    it("renders a neutral label for LEGACY_UNKNOWN — not AI, not human edit", () => {
+      render(<VersionHistorySection versions={[legacyVersion]} selectedVersion={1} onViewVersion={jest.fn()} />);
+
+      expect(screen.getByText(/Procedencia histórica no verificable/i)).toBeInTheDocument();
+    });
+
+    it("does not render the AI label ('IA') for a LEGACY_UNKNOWN revision", () => {
+      render(<VersionHistorySection versions={[legacyVersion]} selectedVersion={1} onViewVersion={jest.fn()} />);
+
+      expect(screen.queryByText("IA")).not.toBeInTheDocument();
+    });
+
+    it("does not render a human-edit label for a LEGACY_UNKNOWN revision", () => {
+      render(<VersionHistorySection versions={[legacyVersion]} selectedVersion={1} onViewVersion={jest.fn()} />);
+
+      expect(screen.queryByText(/editado/i)).not.toBeInTheDocument();
+    });
+
+    it("renders without crashing when actorId is null (always null for LEGACY_UNKNOWN)", () => {
+      render(<VersionHistorySection versions={[{ ...legacyVersion, actorId: null }]} selectedVersion={1} onViewVersion={jest.fn()} />);
+
+      expect(screen.getByText(/Procedencia histórica no verificable/i)).toBeInTheDocument();
+    });
+
+    it("renders without crashing when reason is null (always null for LEGACY_UNKNOWN)", () => {
+      render(<VersionHistorySection versions={[{ ...legacyVersion, reason: null }]} selectedVersion={1} onViewVersion={jest.fn()} />);
+
+      expect(screen.getByText(/Procedencia histórica no verificable/i)).toBeInTheDocument();
+    });
+  });
 });

@@ -4,7 +4,10 @@ import { use } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ds";
 import { useShellConfig } from "@/components/shell/ShellContext";
-import { useAssessmentDraftBuilderPage, NOT_FOUND_MESSAGE } from "@/features/assessment-creation/hooks/useAssessmentDraftBuilderPage";
+import {
+  useAssessmentDraftBuilderPage,
+  NOT_FOUND_MESSAGE,
+} from "@/features/assessment-creation/hooks/useAssessmentDraftBuilderPage";
 import DraftEditorSection from "@/features/assessment-creation/components/DraftEditorSection";
 import RegenerateSection from "@/features/assessment-creation/components/RegenerateSection";
 import VersionHistorySection from "@/features/assessment-creation/components/VersionHistorySection";
@@ -44,6 +47,26 @@ function CenteredStatePanel({
       )}
     </div>
   );
+}
+
+// Safe translation for FAILED_TERMINAL failure codes — teachers never see raw technical codes.
+// Unknown codes fall back to the generic explanation below (conservative: no invented meaning).
+const TERMINAL_FAILURE_CODE_MESSAGES: Record<string, string> = {
+  CONTENT_POLICY_VIOLATION:
+    "El contenido de la evaluación fue rechazado por las políticas del proveedor de IA.",
+  PROVIDER_CAPACITY_EXHAUSTED:
+    "El proveedor de IA alcanzó su límite de capacidad. Esta solicitud no puede reintentarse automáticamente.",
+  BUDGET_LIMIT_REACHED:
+    "Se alcanzó el límite de presupuesto configurado para generación por IA.",
+  UNSUPPORTED_LANGUAGE:
+    "El idioma especificado no está soportado por el modelo seleccionado.",
+};
+const TERMINAL_FAILURE_DEFAULT_MESSAGE =
+  "La generación no pudo completarse de forma permanente. Contacta al soporte si el problema persiste.";
+
+function translateTerminalFailureCode(failureCode: string | undefined): string {
+  if (!failureCode) return TERMINAL_FAILURE_DEFAULT_MESSAGE;
+  return TERMINAL_FAILURE_CODE_MESSAGES[failureCode] ?? TERMINAL_FAILURE_DEFAULT_MESSAGE;
 }
 
 export default function DraftBuilderPage({ params }: DraftBuilderPageProps) {
@@ -130,6 +153,21 @@ export default function DraftBuilderPage({ params }: DraftBuilderPageProps) {
           loading: page.data.isRetrying,
           onClick: page.data.onRetry,
         }}
+      />
+    );
+  }
+
+  // A permanent, non-retryable failure — no retry button is shown. Visual and semantic
+  // distinction from FAILED_RETRYABLE: the teacher sees why it failed (via a safe translation)
+  // and that they cannot retry from here. Must not redirect to not-found (the assessment exists)
+  // and must not fall into the generic error block (this is a known, expected state).
+  if (page.status === "generation-failed-terminal") {
+    const terminalFailureMessage = translateTerminalFailureCode(page.data.failureCode);
+    return (
+      <CenteredStatePanel
+        role="alert"
+        message="La generación del borrador no pudo completarse."
+        errorMessage={terminalFailureMessage}
       />
     );
   }
