@@ -1,10 +1,16 @@
 package cl.gradeops.ai.api.shared.infrastructure.adapter.in.web;
 
 import cl.gradeops.ai.api.agentclient.AgentClientException;
+import cl.gradeops.ai.api.assessment.application.exception.AlreadyGeneratedException;
+import cl.gradeops.ai.api.assessment.application.exception.NoActiveOperationToRetryException;
+import cl.gradeops.ai.api.assessment.application.exception.OperationInProgressException;
+import cl.gradeops.ai.api.assessment.application.exception.StaleOnCompletionException;
+import cl.gradeops.ai.api.assessment.application.exception.StaleRevisionException;
 import cl.gradeops.ai.api.auth.domain.exception.InvalidResetCodeException;
 import cl.gradeops.ai.api.auth.domain.exception.PasswordMismatchException;
 import cl.gradeops.ai.api.auth.domain.exception.ResetCodeEmailMismatchException;
 import cl.gradeops.ai.api.shared.application.exception.ApplicationException;
+import cl.gradeops.ai.api.shared.application.idempotency.IdempotencyKeyPayloadMismatchException;
 import cl.gradeops.ai.api.shared.application.exception.InvalidCommandException;
 import cl.gradeops.ai.api.shared.domain.exception.DomainInvariantViolationException;
 import cl.gradeops.ai.api.shared.domain.exception.DuplicateEmailException;
@@ -16,7 +22,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -65,6 +73,42 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleResetCodeEmailMismatch(ResetCodeEmailMismatchException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
                 .body(ApiErrorResponse.of("RESET_CODE_EMAIL_MISMATCH"));
+    }
+
+    @ExceptionHandler(AlreadyGeneratedException.class)
+    public ResponseEntity<ApiConflictErrorResponse> handleAlreadyGenerated(AlreadyGeneratedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiConflictErrorResponse.of("ALREADY_GENERATED", ex.getMessage()));
+    }
+
+    @ExceptionHandler(StaleOnCompletionException.class)
+    public ResponseEntity<ApiConflictErrorResponse> handleStaleOnCompletion(StaleOnCompletionException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiConflictErrorResponse.of("STALE_ON_COMPLETION", ex.getMessage()));
+    }
+
+    @ExceptionHandler(StaleRevisionException.class)
+    public ResponseEntity<ApiConflictErrorResponse> handleStaleRevision(StaleRevisionException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiConflictErrorResponse.of("STALE_REVISION", ex.getMessage()));
+    }
+
+    @ExceptionHandler(IdempotencyKeyPayloadMismatchException.class)
+    public ResponseEntity<ApiConflictErrorResponse> handleIdempotencyKeyPayloadMismatch(IdempotencyKeyPayloadMismatchException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiConflictErrorResponse.of("IDEMPOTENCY_KEY_PAYLOAD_MISMATCH", ex.getMessage()));
+    }
+
+    @ExceptionHandler(NoActiveOperationToRetryException.class)
+    public ResponseEntity<ApiConflictErrorResponse> handleNoActiveOperationToRetry(NoActiveOperationToRetryException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiConflictErrorResponse.of("NO_ACTIVE_OPERATION_TO_RETRY", ex.getMessage()));
+    }
+
+    @ExceptionHandler(OperationInProgressException.class)
+    public ResponseEntity<ApiConflictErrorResponse> handleOperationInProgress(OperationInProgressException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiConflictErrorResponse.of("OPERATION_IN_PROGRESS", ex.getMessage()));
     }
 
     @ExceptionHandler(AgentClientException.class)
@@ -121,10 +165,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(errors);
     }
 
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ApiErrorResponse> handleMissingHeader(MissingRequestHeaderException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiErrorResponse.of("MISSING_HEADER", ex.getHeaderName()));
+    }
+
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiErrorResponse> handleMissingParam(MissingServletRequestParameterException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiErrorResponse.of("MISSING_PARAMETER", ex.getParameterName()));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(ApiErrorResponse.of("METHOD_NOT_ALLOWED", ex.getMethod()));
     }
 
     @ExceptionHandler(ResponseStatusException.class)
