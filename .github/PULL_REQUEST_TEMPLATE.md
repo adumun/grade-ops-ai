@@ -4,12 +4,19 @@
 - Closes #
 - Refs #
 
+## Initiative Repository Set
+
+<!-- Declare every repository genuinely involved in or required by this execution slice. Do not narrow this set to evade the open-PR gate. -->
+- `owner/repo`
+
 ## Dependency Preflight
 
-- Status: `PASS | BLOCKED_BY_OPEN_PR | BLOCKED_BY_DEPENDENCY_STATE | PASS_WITH_DECLARED_NON_BLOCKING_WORK`
-- Repositories reviewed:
-  - `owner/repo` — state / relevant PRs / blocking rationale
-- Blocking PRs resolved by owner: `N/A` or links
+- Status: `PASS | BLOCKED_BY_OPEN_PR | BLOCKED_BY_DEPENDENCY_STATE`
+- Fresh preflight evidence:
+  - `owner/repo` — open PRs: `0` or links
+- Previously blocking PRs resolved by owner: `N/A` or links
+
+`PASS` is valid only when every repository in the declared initiative repository set has zero open Pull Requests. Any open PR in any repository in the set requires `BLOCKED_BY_OPEN_PR`, regardless of semantic relevance.
 
 ## Scope
 
@@ -43,7 +50,8 @@ Describe breaking changes, migrations, version/provenance implications, or state
 ## Lifecycle / Merge Readiness
 
 - [ ] planning Issue exists for material work
-- [ ] dependency preflight completed
+- [ ] initiative repository set is explicit and complete for this slice
+- [ ] fresh preflight verified zero open PRs in every repository in the set before implementation
 - [ ] commits reference Issue IDs
 - [ ] closing/non-closing Issue relationships above are accurate
 - [ ] scope is coherently integrated

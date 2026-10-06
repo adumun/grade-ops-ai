@@ -28,13 +28,19 @@ Define the bounded remediation planned by this Issue.
 - [ ] Fix/remediation is implemented.
 - [ ] Regression/verification evidence is recorded.
 
+## Initiative Repository Set
+
+Declare every repository genuinely involved in or required by this remediation slice. Do not narrow the set to evade the open-PR gate.
+
+- `owner/repo`
+
 ## Repository / Dependency Preflight
 
-- Status: `PASS | BLOCKED_BY_OPEN_PR | BLOCKED_BY_DEPENDENCY_STATE | PASS_WITH_DECLARED_NON_BLOCKING_WORK`
-- Repositories involved:
-  - `owner/repo`
-- Relevant open PRs:
-  - `None` or links + rationale
+- Status: `PASS | BLOCKED_BY_OPEN_PR | BLOCKED_BY_DEPENDENCY_STATE`
+- Fresh open-PR state:
+  - `owner/repo` — open PRs: `0` or links
+
+`PASS` requires zero open Pull Requests in every repository in the declared initiative repository set. Any open PR inside the set requires `BLOCKED_BY_OPEN_PR`, regardless of semantic relevance.
 
 ## Validation / Evidence Expected
 
