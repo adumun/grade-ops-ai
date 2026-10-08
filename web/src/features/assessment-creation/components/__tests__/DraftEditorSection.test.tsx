@@ -11,22 +11,16 @@ const draft: AssessmentDraftViewModel = {
   deliverables: ["Archivo .py con la función implementada"],
   constraints: ["No usar librerías externas"],
   versionNumber: 4,
+  origin: "AI_GENERATED",
+  actorId: null,
+  reason: null,
+  previousRevisionId: "fake-draft-0",
 };
 
 describe("DraftEditorSection", () => {
   it("renders the current draft's fields and calls onSave with edited values", async () => {
     const onSave = jest.fn();
-    render(
-      <DraftEditorSection
-        draft={draft}
-        aiDisclosureLabel="version-actual"
-        isReadOnly={false}
-        isSaving={false}
-        fieldErrors={null}
-        serverError={null}
-        onSave={onSave}
-      />
-    );
+    render(<DraftEditorSection draft={draft} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={onSave} />);
 
     expect(screen.getByLabelText(/^Título/)).toHaveValue("Recursividad: Fibonacci");
 
@@ -42,17 +36,7 @@ describe("DraftEditorSection", () => {
 
   it("blocks submission and shows an error when a required field is emptied", async () => {
     const onSave = jest.fn();
-    render(
-      <DraftEditorSection
-        draft={draft}
-        aiDisclosureLabel="version-actual"
-        isReadOnly={false}
-        isSaving={false}
-        fieldErrors={null}
-        serverError={null}
-        onSave={onSave}
-      />
-    );
+    render(<DraftEditorSection draft={draft} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={onSave} />);
 
     fireEvent.change(screen.getByLabelText(/^Título/), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: /guardar cambios/i }));
@@ -64,17 +48,7 @@ describe("DraftEditorSection", () => {
   });
 
   it("disables every field while isSaving", () => {
-    render(
-      <DraftEditorSection
-        draft={draft}
-        aiDisclosureLabel="version-actual"
-        isReadOnly={false}
-        isSaving
-        fieldErrors={null}
-        serverError={null}
-        onSave={jest.fn()}
-      />
-    );
+    render(<DraftEditorSection draft={draft} isReadOnly={false} isSaving fieldErrors={null} serverError={null} onSave={jest.fn()} />);
 
     expect(screen.getByLabelText(/^Título/)).toBeDisabled();
     expect(screen.getByRole("button", { name: /guardando/i })).toBeDisabled();
@@ -85,7 +59,6 @@ describe("DraftEditorSection", () => {
     render(
       <DraftEditorSection
         draft={{ ...draft, title: "Recursividad: Fibonacci (v1)", versionNumber: 1 }}
-        aiDisclosureLabel="version-actual"
         isReadOnly
         isSaving={false}
         fieldErrors={null}
@@ -101,31 +74,11 @@ describe("DraftEditorSection", () => {
   });
 
   it("re-enables editing and the save button once isReadOnly returns to false", () => {
-    const { rerender } = render(
-      <DraftEditorSection
-        draft={draft}
-        aiDisclosureLabel="version-actual"
-        isReadOnly
-        isSaving={false}
-        fieldErrors={null}
-        serverError={null}
-        onSave={jest.fn()}
-      />
-    );
+    const { rerender } = render(<DraftEditorSection draft={draft} isReadOnly isSaving={false} fieldErrors={null} serverError={null} onSave={jest.fn()} />);
     expect(screen.getByLabelText(/^Título/)).toBeDisabled();
     expect(screen.queryByRole("button", { name: /guardar cambios/i })).not.toBeInTheDocument();
 
-    rerender(
-      <DraftEditorSection
-        draft={draft}
-        aiDisclosureLabel="version-actual"
-        isReadOnly={false}
-        isSaving={false}
-        fieldErrors={null}
-        serverError={null}
-        onSave={jest.fn()}
-      />
-    );
+    rerender(<DraftEditorSection draft={draft} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={jest.fn()} />);
 
     expect(screen.getByLabelText(/^Título/)).not.toBeDisabled();
     expect(screen.getByRole("button", { name: /guardar cambios/i })).toBeInTheDocument();
@@ -135,7 +88,6 @@ describe("DraftEditorSection", () => {
     render(
       <DraftEditorSection
         draft={draft}
-        aiDisclosureLabel="version-actual"
         isReadOnly={false}
         isSaving={false}
         fieldErrors={{ title: "Ya existe un draft con este título" }}
@@ -146,6 +98,86 @@ describe("DraftEditorSection", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Ya existe un draft con este título")).toBeInTheDocument();
+    });
+  });
+
+  it("shows 'Generado por IA' provenance for an AI_GENERATED revision", () => {
+    render(
+      <DraftEditorSection
+        draft={{ ...draft, origin: "AI_GENERATED", actorId: null }}
+        isReadOnly={false}
+        isSaving={false}
+        fieldErrors={null}
+        serverError={null}
+        onSave={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Generado por IA/)).toBeInTheDocument();
+  });
+
+  it("shows a human-edited provenance label with the actor for a HUMAN_EDITED revision, not the old transient label", () => {
+    render(
+      <DraftEditorSection
+        draft={{ ...draft, origin: "HUMAN_EDITED", actorId: "teacher-42" }}
+        isReadOnly={false}
+        isSaving={false}
+        fieldErrors={null}
+        serverError={null}
+        onSave={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Editado por teacher-42/)).toBeInTheDocument();
+  });
+
+  describe("LEGACY_UNKNOWN provenance", () => {
+    const legacyDraft = {
+      ...draft,
+      origin: "LEGACY_UNKNOWN" as const,
+      actorId: null,
+      reason: null,
+    };
+
+    it("mapper accepts LEGACY_UNKNOWN and renders a neutral provenance label", () => {
+      render(
+        <DraftEditorSection draft={legacyDraft} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={jest.fn()} />
+      );
+
+      expect(screen.getByText(/Procedencia histórica no verificable/i)).toBeInTheDocument();
+    });
+
+    it("does not show the AI label ('Generado por IA') for a LEGACY_UNKNOWN revision", () => {
+      render(
+        <DraftEditorSection draft={legacyDraft} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={jest.fn()} />
+      );
+
+      expect(screen.queryByText(/Generado por IA/i)).not.toBeInTheDocument();
+    });
+
+    it("does not show a human-edit label for a LEGACY_UNKNOWN revision", () => {
+      render(
+        <DraftEditorSection draft={legacyDraft} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={jest.fn()} />
+      );
+
+      expect(screen.queryByText(/Editado manualmente/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Editado por/i)).not.toBeInTheDocument();
+    });
+
+    it("renders without crashing when actorId is null (always null for LEGACY_UNKNOWN)", () => {
+      render(
+        <DraftEditorSection draft={{ ...legacyDraft, actorId: null }} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={jest.fn()} />
+      );
+
+      expect(screen.getByText(/Procedencia histórica no verificable/i)).toBeInTheDocument();
+    });
+
+    it("renders without crashing when reason is null (always null for LEGACY_UNKNOWN)", () => {
+      render(
+        <DraftEditorSection draft={{ ...legacyDraft, reason: null }} isReadOnly={false} isSaving={false} fieldErrors={null} serverError={null} onSave={jest.fn()} />
+      );
+
+      expect(screen.getByText(/Procedencia histórica no verificable/i)).toBeInTheDocument();
     });
   });
 });

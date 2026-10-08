@@ -6,7 +6,6 @@ import type { AssessmentDraftViewModel } from "../mappers/toAssessmentDraftBuild
 
 interface DraftEditorSectionProps {
   draft: AssessmentDraftViewModel;
-  aiDisclosureLabel: "generado-por-ia" | "version-actual";
   isReadOnly: boolean;
   isSaving: boolean;
   fieldErrors: Partial<Record<DraftEditableField, string>> | null;
@@ -14,9 +13,20 @@ interface DraftEditorSectionProps {
   onSave: (values: DraftEditableFields) => void;
 }
 
+// Authoritative provenance from the API (draft.origin/actorId), not a transient local label —
+// see docs/99-decisions/2026-07-28-authoring-operation-contract.md § 2/5/6 and
+// LOCAL-CONTRACTS.md's "ready" state note replacing the old generado-por-ia/version-actual pair.
+// LEGACY_UNKNOWN: historical records where the schema cannot confirm AI vs. human authorship.
+// actorId is nullable for both HUMAN_EDITED (when not recorded) and LEGACY_UNKNOWN (always null).
+function provenanceLabel(draft: AssessmentDraftViewModel): string {
+  if (draft.origin === "AI_GENERATED") return "Generado por IA";
+  if (draft.origin === "LEGACY_UNKNOWN") return "Procedencia histórica no verificable";
+  // HUMAN_EDITED — actorId may be null when not recorded
+  return draft.actorId ? `Editado por ${draft.actorId}` : "Editado manualmente";
+}
+
 export default function DraftEditorSection({
   draft,
-  aiDisclosureLabel,
   isReadOnly,
   isSaving,
   fieldErrors,
@@ -35,7 +45,7 @@ export default function DraftEditorSection({
       </h2>
       {!isReadOnly && (
         <p style={{ fontSize: "var(--text-sm)", color: "var(--text-subtle)", margin: "0 0 16px" }}>
-          {aiDisclosureLabel === "generado-por-ia" ? "Generado por IA" : "Versión actual"} · v{draft.versionNumber}
+          {provenanceLabel(draft)} · v{draft.versionNumber}
         </p>
       )}
 

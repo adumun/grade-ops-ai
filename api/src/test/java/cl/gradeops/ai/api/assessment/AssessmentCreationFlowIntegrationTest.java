@@ -1,6 +1,5 @@
 package cl.gradeops.ai.api.assessment;
 
-import cl.gradeops.ai.api.agentclient.AgentClientException;
 import cl.gradeops.ai.api.agentclient.AssessmentAgentClient;
 import cl.gradeops.ai.api.agentclient.AssessmentAgentResponse;
 import cl.gradeops.ai.api.assessment.application.command.CreateAssessmentBriefCommand;
@@ -8,35 +7,40 @@ import cl.gradeops.ai.api.assessment.application.command.GenerateAssessmentDraft
 import cl.gradeops.ai.api.assessment.application.command.GetCurrentDraftCommand;
 import cl.gradeops.ai.api.assessment.application.command.ListDraftVersionsCommand;
 import cl.gradeops.ai.api.assessment.application.command.RegenerateAssessmentDraftCommand;
-import cl.gradeops.ai.api.assessment.application.command.UpdateAssessmentDraftCommand;
 import cl.gradeops.ai.api.assessment.application.result.AssessmentSummaryResult;
 import cl.gradeops.ai.api.assessment.application.result.CreateAssessmentBriefResult;
+import cl.gradeops.ai.api.assessment.application.result.GenerateAssessmentDraftOutcome;
 import cl.gradeops.ai.api.assessment.application.result.GenerateAssessmentDraftResult;
+import cl.gradeops.ai.api.assessment.application.usecase.AiOperationCoordinator;
 import cl.gradeops.ai.api.assessment.application.usecase.CreateAssessmentBriefHandler;
-import cl.gradeops.ai.api.assessment.application.usecase.DraftGenerationCoordinator;
 import cl.gradeops.ai.api.assessment.application.usecase.GenerateAssessmentDraftHandler;
 import cl.gradeops.ai.api.assessment.application.usecase.GetCurrentDraftHandler;
 import cl.gradeops.ai.api.assessment.application.usecase.ListAssessmentsHandler;
 import cl.gradeops.ai.api.assessment.application.usecase.ListDraftVersionsHandler;
 import cl.gradeops.ai.api.assessment.application.usecase.RegenerateAssessmentDraftHandler;
-import cl.gradeops.ai.api.assessment.application.usecase.UpdateAssessmentDraftHandler;
+import cl.gradeops.ai.api.assessment.domain.model.Assessment;
 import cl.gradeops.ai.api.assessment.domain.model.AssessmentBrief;
-import cl.gradeops.ai.api.assessment.domain.model.AssessmentId;
-import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AgentExecutionLogJpaEntity;
-import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AgentExecutionLogJpaRepository;
-import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AgentExecutionLogPersistenceAdapter;
-import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AgentExecutionLogPersistenceMapper;
+import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AgentAttemptJpaRepository;
+import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AgentAttemptPersistenceAdapter;
+import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AgentAttemptPersistenceMapper;
+import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AiOperationJpaRepository;
+import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AiOperationPersistenceAdapter;
+import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AiOperationPersistenceMapper;
 import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentBriefJpaRepository;
 import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentBriefPersistenceAdapter;
 import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentBriefPersistenceMapper;
-import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentDraftJpaEntity;
-import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentDraftJpaRepository;
-import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentDraftPersistenceAdapter;
-import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentDraftPersistenceMapper;
 import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentJpaRepository;
 import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentPersistenceAdapter;
 import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentPersistenceMapper;
+import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentRevisionJpaEntity;
+import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentRevisionJpaRepository;
+import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentRevisionPersistenceAdapter;
+import cl.gradeops.ai.api.assessment.infrastructure.adapter.out.persistence.AssessmentRevisionPersistenceMapper;
+import cl.gradeops.ai.api.shared.application.idempotency.IdempotencyGuard;
 import cl.gradeops.ai.api.shared.application.security.OwnershipVerifier;
+import cl.gradeops.ai.api.shared.infrastructure.adapter.out.persistence.IdempotencyRecordJpaRepository;
+import cl.gradeops.ai.api.shared.infrastructure.adapter.out.persistence.IdempotencyRecordPersistenceAdapter;
+import cl.gradeops.ai.api.shared.infrastructure.adapter.out.persistence.IdempotencyRecordPersistenceMapper;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,25 +55,41 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.testcontainers.containers.PostgreSQLContainer;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
  * Cross-cutting, whole-story integration coverage for the assessment-creation flow, against a
- * live Postgres (Flyway-migrated through V12). Complements — does not duplicate — task-06
- * through task-10's own focused tests: those exercise one endpoint's handler in isolation, this
- * class chains all of them together the way a real teacher session would (brief → generate →
- * regenerate → edit → list → retrieve current → retrieve version history) and asserts
- * consistency at every step. Only {@link AssessmentAgentClient} is stubbed; every persistence
- * adapter, coordinator, and handler runs for real. Requires Docker.
+ * live Postgres (Flyway-migrated through V16): brief → generate → regenerate → regenerate again,
+ * asserting consistency at every step. Complements — does not duplicate — this packet's own
+ * per-handler focused tests: those exercise one handler in isolation, this class chains several
+ * together the way a real teacher session would.
+ *
+ * <p>Session A3 (Task 09) rewrote this file onto the durable {@code AssessmentRevision} model —
+ * both {@link GenerateAssessmentDraftHandler} (Session A2) and {@link
+ * RegenerateAssessmentDraftHandler} (this session) now produce {@code AssessmentRevision} rows,
+ * so there is no more legacy-{@code AssessmentDraft}-seeding step. Session A3 (Task 10) migrated
+ * {@link ListAssessmentsHandler}/{@link GetCurrentDraftHandler}/{@link ListDraftVersionsHandler}
+ * off the legacy {@code AssessmentDraft} table onto {@code AssessmentRevision}/{@code
+ * Assessment.currentRevisionId} — this file now exercises all three against the same
+ * revision-based assessment the write path produces, closing the gap Task 09 left open.
+ *
+ * <p>Session A3 (Task 08) removed {@code UpdateAssessmentDraftHandler} — human edits now create
+ * an immutable {@code AssessmentRevision} via {@code CreateHumanRevisionHandler} instead (see
+ * {@code CreateHumanRevisionHandlerIntegrationTest}). This file's own former "edit preserves
+ * id/version" coverage was deleted outright, not adapted — TEST-PLAN.md's regression guard #2.
+ *
+ * <p>Only {@link AssessmentAgentClient} is stubbed; every persistence adapter and handler
+ * exercised here runs for real. Requires Docker.
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -98,19 +118,22 @@ class AssessmentCreationFlowIntegrationTest {
 
     @Autowired AssessmentJpaRepository assessmentJpaRepository;
     @Autowired AssessmentBriefJpaRepository briefJpaRepository;
-    @Autowired AssessmentDraftJpaRepository draftJpaRepository;
-    @Autowired AgentExecutionLogJpaRepository logJpaRepository;
+    @Autowired AssessmentRevisionJpaRepository revisionJpaRepository;
+    @Autowired AiOperationJpaRepository aiOperationJpaRepository;
+    @Autowired AgentAttemptJpaRepository agentAttemptJpaRepository;
+    @Autowired IdempotencyRecordJpaRepository idempotencyRecordJpaRepository;
     @Autowired JdbcTemplate jdbcTemplate;
     @Autowired EntityManager entityManager;
     @Autowired PlatformTransactionManager transactionManager;
 
     AssessmentAgentClient assessmentAgentClient;
     AssessmentBriefPersistenceAdapter briefAdapter;
+    AssessmentPersistenceAdapter assessmentAdapter;
+    AssessmentRevisionPersistenceAdapter revisionAdapter;
 
     CreateAssessmentBriefHandler createBriefHandler;
     GenerateAssessmentDraftHandler generateHandler;
     RegenerateAssessmentDraftHandler regenerateHandler;
-    UpdateAssessmentDraftHandler updateHandler;
     GetCurrentDraftHandler getCurrentDraftHandler;
     ListDraftVersionsHandler listDraftVersionsHandler;
     ListAssessmentsHandler listAssessmentsHandler;
@@ -119,25 +142,30 @@ class AssessmentCreationFlowIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        AssessmentPersistenceAdapter assessmentAdapter =
-                new AssessmentPersistenceAdapter(assessmentJpaRepository, new AssessmentPersistenceMapper());
+        assessmentAdapter = new AssessmentPersistenceAdapter(assessmentJpaRepository, new AssessmentPersistenceMapper());
         briefAdapter = new AssessmentBriefPersistenceAdapter(briefJpaRepository, new AssessmentBriefPersistenceMapper());
-        AssessmentDraftPersistenceAdapter draftAdapter =
-                new AssessmentDraftPersistenceAdapter(draftJpaRepository, new AssessmentDraftPersistenceMapper());
-        AgentExecutionLogPersistenceAdapter logAdapter =
-                new AgentExecutionLogPersistenceAdapter(logJpaRepository, new AgentExecutionLogPersistenceMapper());
+        revisionAdapter = new AssessmentRevisionPersistenceAdapter(revisionJpaRepository, new AssessmentRevisionPersistenceMapper());
+        AiOperationPersistenceAdapter aiOperationAdapter =
+                new AiOperationPersistenceAdapter(aiOperationJpaRepository, new AiOperationPersistenceMapper());
+        AgentAttemptPersistenceAdapter agentAttemptAdapter =
+                new AgentAttemptPersistenceAdapter(agentAttemptJpaRepository, new AgentAttemptPersistenceMapper());
+        IdempotencyRecordPersistenceAdapter idempotencyAdapter =
+                new IdempotencyRecordPersistenceAdapter(idempotencyRecordJpaRepository, new IdempotencyRecordPersistenceMapper());
+        IdempotencyGuard idempotencyGuard = new IdempotencyGuard(idempotencyAdapter);
         assessmentAgentClient = mock(AssessmentAgentClient.class);
-        DraftGenerationCoordinator coordinator = new DraftGenerationCoordinator(
-                draftAdapter, logAdapter, assessmentAgentClient, transactionManager);
+        JsonMapper jsonMapper = JsonMapper.builder().build();
         OwnershipVerifier ownershipVerifier = new OwnershipVerifier();
 
-        createBriefHandler = new CreateAssessmentBriefHandler(assessmentAdapter, briefAdapter);
-        generateHandler = new GenerateAssessmentDraftHandler(assessmentAdapter, briefAdapter, ownershipVerifier, coordinator);
-        regenerateHandler = new RegenerateAssessmentDraftHandler(
-                assessmentAdapter, briefAdapter, draftAdapter, ownershipVerifier, coordinator);
-        updateHandler = new UpdateAssessmentDraftHandler(assessmentAdapter, draftAdapter, ownershipVerifier);
-        getCurrentDraftHandler = new GetCurrentDraftHandler(assessmentAdapter, draftAdapter, ownershipVerifier);
-        listDraftVersionsHandler = new ListDraftVersionsHandler(assessmentAdapter, draftAdapter, ownershipVerifier);
+        AiOperationCoordinator coordinator = new AiOperationCoordinator(assessmentAdapter, aiOperationAdapter,
+                agentAttemptAdapter, revisionAdapter, assessmentAgentClient, idempotencyGuard, jsonMapper, transactionManager);
+
+        createBriefHandler = new CreateAssessmentBriefHandler(assessmentAdapter, briefAdapter, idempotencyGuard, transactionManager);
+        generateHandler = new GenerateAssessmentDraftHandler(assessmentAdapter, briefAdapter, revisionAdapter,
+                aiOperationAdapter, agentAttemptAdapter, ownershipVerifier, idempotencyGuard, coordinator);
+        regenerateHandler = new RegenerateAssessmentDraftHandler(assessmentAdapter, briefAdapter, revisionAdapter,
+                aiOperationAdapter, agentAttemptAdapter, ownershipVerifier, idempotencyGuard, coordinator);
+        getCurrentDraftHandler = new GetCurrentDraftHandler(assessmentAdapter, revisionAdapter, ownershipVerifier);
+        listDraftVersionsHandler = new ListDraftVersionsHandler(assessmentAdapter, revisionAdapter, ownershipVerifier);
         listAssessmentsHandler = new ListAssessmentsHandler(assessmentAdapter);
 
         jdbcTemplate.update(
@@ -151,13 +179,13 @@ class AssessmentCreationFlowIntegrationTest {
         return new AssessmentAgentResponse(
                 new AssessmentAgentResponse.Result(title, "Context " + title, "Instructions " + title,
                         List.of("obj-" + title), List.of("del-" + title), List.of("con-" + title)),
-                new AssessmentAgentResponse.Log(UUID.randomUUID(), "assessment", "gemini-2.0-flash", "v1",
+                new AssessmentAgentResponse.Log(UUID.randomUUID(), "assessment", "gemini", "gemini-2.0-flash", "v1",
                         "in-hash-" + title, "out-hash-" + title, 100, 200, 0.01, "COMPLETED", null, startedAt, finishedAt));
     }
 
     private UUID createBrief() {
         CreateAssessmentBriefResult result = createBriefHandler.execute(new CreateAssessmentBriefCommand(
-                TEACHER_UID, "Evaluate loops", "Java loops", "basic", "90min", "Java"));
+                TEACHER_UID, "Evaluate loops", "Java loops", "basic", "90min", "Java", "brief-key"));
         entityManager.flush();
         entityManager.clear();
         return UUID.fromString(result.assessmentId());
@@ -168,115 +196,76 @@ class AssessmentCreationFlowIntegrationTest {
         UUID assessmentId = createBrief();
 
         // The brief is retrievable before any agent call — persist-before-agent-call ordering.
-        AssessmentBrief persistedBrief = briefAdapter.findByAssessmentId(new AssessmentId(assessmentId)).orElseThrow();
+        AssessmentBrief persistedBrief = briefAdapter.findByAssessmentId(new cl.gradeops.ai.api.assessment.domain.model.AssessmentId(assessmentId)).orElseThrow();
         assertThat(persistedBrief.getTopic()).isEqualTo("Java loops");
 
-        when(assessmentAgentClient.generate(any())).thenReturn(response("V1"));
-        GenerateAssessmentDraftResult generated = generateHandler.execute(
-                new GenerateAssessmentDraftCommand(assessmentId, TEACHER_UID));
+        when(assessmentAgentClient.generate(any(), anyString())).thenReturn(response("V1"));
+        GenerateAssessmentDraftResult generated = ((GenerateAssessmentDraftOutcome.RevisionCreated) generateHandler.execute(
+                new GenerateAssessmentDraftCommand(assessmentId, TEACHER_UID, "gen-key"))).revision();
         entityManager.flush();
         entityManager.clear();
         assertThat(generated.versionNumber()).isEqualTo(1);
         assertThat(generated.title()).isEqualTo("V1");
+        assertThat(generated.origin()).isEqualTo("AI_GENERATED");
 
-        when(assessmentAgentClient.generate(any())).thenReturn(response("V2"));
-        GenerateAssessmentDraftResult regenerated = regenerateHandler.execute(
-                new RegenerateAssessmentDraftCommand(assessmentId, TEACHER_UID, "make it harder"));
+        when(assessmentAgentClient.generate(any(), anyString())).thenReturn(response("V2"));
+        GenerateAssessmentDraftResult regenerated = regenerateHandler.execute(new RegenerateAssessmentDraftCommand(
+                assessmentId, TEACHER_UID, "make it harder", generated.draftId(), "regen-key"));
         entityManager.flush();
         entityManager.clear();
         assertThat(regenerated.versionNumber()).isEqualTo(2);
         assertThat(regenerated.title()).isEqualTo("V2");
+        assertThat(regenerated.previousRevisionId()).isEqualTo(generated.draftId());
 
-        GenerateAssessmentDraftResult edited = updateHandler.execute(new UpdateAssessmentDraftCommand(
-                assessmentId, TEACHER_UID, "V2 edited", null, null, null, null, null));
-        entityManager.flush();
-        entityManager.clear();
-        // Editing does not create a new version: same draft id and version number as v2.
-        assertThat(edited.draftId()).isEqualTo(regenerated.draftId());
-        assertThat(edited.versionNumber()).isEqualTo(2);
-        assertThat(edited.title()).isEqualTo("V2 edited");
+        // currentRevisionId points at the regenerated version.
+        Assessment reloaded = assessmentAdapter.findById(new cl.gradeops.ai.api.assessment.domain.model.AssessmentId(assessmentId)).orElseThrow();
+        assertThat(reloaded.getCurrentRevisionId()).isEqualTo(regenerated.draftId());
 
-        // Dashboard listing reflects the assessment with the latest (edited) title.
-        List<AssessmentSummaryResult> summaries = listAssessmentsHandler.execute(TEACHER_UID);
-        assertThat(summaries).hasSize(1);
-        assertThat(summaries.get(0).id()).isEqualTo(assessmentId.toString());
-        assertThat(summaries.get(0).title()).isEqualTo("V2 edited");
+        // v1 is untouched.
+        AssessmentRevisionJpaEntity v1Entity = revisionJpaRepository.findById(generated.draftId()).orElseThrow();
+        assertThat(v1Entity.getTitle()).isEqualTo("V1");
+        assertThat(v1Entity.getVersionNumber()).isEqualTo(1);
 
-        // Retrieve current draft matches the edited state.
-        GenerateAssessmentDraftResult current = getCurrentDraftHandler.execute(
+        // GetCurrentDraftHandler reads through Assessment.currentRevisionId, not MAX(version_number).
+        GenerateAssessmentDraftResult currentDraft = getCurrentDraftHandler.execute(
                 new GetCurrentDraftCommand(assessmentId, TEACHER_UID));
-        assertThat(current.draftId()).isEqualTo(edited.draftId());
-        assertThat(current.versionNumber()).isEqualTo(2);
-        assertThat(current.title()).isEqualTo("V2 edited");
+        assertThat(currentDraft.draftId()).isEqualTo(regenerated.draftId());
+        assertThat(currentDraft.title()).isEqualTo("V2");
+        assertThat(currentDraft.versionNumber()).isEqualTo(2);
 
-        // Version history lists both versions, newest first, v1 untouched by the edit.
+        // ListDraftVersionsHandler returns both revisions, newest first.
         List<GenerateAssessmentDraftResult> versions = listDraftVersionsHandler.execute(
                 new ListDraftVersionsCommand(assessmentId, TEACHER_UID));
-        assertThat(versions).hasSize(2);
-        assertThat(versions.get(0).versionNumber()).isEqualTo(2);
-        assertThat(versions.get(0).title()).isEqualTo("V2 edited");
-        assertThat(versions.get(1).versionNumber()).isEqualTo(1);
-        assertThat(versions.get(1).title()).isEqualTo("V1");
-        assertThat(versions.get(1).draftId()).isEqualTo(generated.draftId());
-    }
+        assertThat(versions).extracting(GenerateAssessmentDraftResult::versionNumber).containsExactly(2, 1);
+        assertThat(versions).extracting(GenerateAssessmentDraftResult::title).containsExactly("V2", "V1");
 
-    @Test
-    void agentFailureDuringGenerationLeavesBriefIntactWithOnlyAFailureLogAndNoDraft() {
-        UUID assessmentId = createBrief();
-
-        AgentClientException agentEx = new AgentClientException(
-                AgentClientException.Reason.AGENT_REJECTED, "rejected", new RuntimeException());
-        when(assessmentAgentClient.generate(any())).thenThrow(agentEx);
-
-        assertThatThrownBy(() -> generateHandler.execute(new GenerateAssessmentDraftCommand(assessmentId, TEACHER_UID)))
-                .isSameAs(agentEx);
-
-        entityManager.flush();
-        entityManager.clear();
-
-        // The brief survives the agent failure untouched.
-        AssessmentBrief persistedBrief = briefAdapter.findByAssessmentId(new AssessmentId(assessmentId)).orElseThrow();
-        assertThat(persistedBrief.getTopic()).isEqualTo("Java loops");
-
-        // No draft was created.
-        assertThat(draftJpaRepository.findAllByAssessmentIdOrderByVersionNumberDesc(assessmentId)).isEmpty();
-
-        // Exactly one failure log was recorded for this assessment.
-        List<AgentExecutionLogJpaEntity> logs = logJpaRepository.findAll().stream()
-                .filter(l -> l.getAssessmentId().equals(assessmentId))
-                .toList();
-        assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getStatus()).isEqualTo("FAILED");
-        assertThat(logs.get(0).getErrorCode()).isEqualTo("AGENT_REJECTED");
-        assertThat(logs.get(0).getDraftId()).isNull();
-
-        // The assessment remains queryable via the dashboard listing, falling back to the
-        // brief's topic since no draft title exists yet.
+        // ListAssessmentsHandler's dashboard summary title tracks the current revision, not the brief topic.
         List<AssessmentSummaryResult> summaries = listAssessmentsHandler.execute(TEACHER_UID);
-        assertThat(summaries).hasSize(1);
-        assertThat(summaries.get(0).id()).isEqualTo(assessmentId.toString());
-        assertThat(summaries.get(0).title()).isEqualTo("Java loops");
+        assertThat(summaries).extracting(AssessmentSummaryResult::id).contains(assessmentId.toString());
+        AssessmentSummaryResult summary = summaries.stream()
+                .filter(s -> s.id().equals(assessmentId.toString())).findFirst().orElseThrow();
+        assertThat(summary.title()).isEqualTo("V2");
     }
 
     @Test
     void twoRegenerationsInARowProduceThreeDistinctRetrievableVersions() {
         UUID assessmentId = createBrief();
 
-        when(assessmentAgentClient.generate(any())).thenReturn(response("V1"));
-        GenerateAssessmentDraftResult v1 = generateHandler.execute(
-                new GenerateAssessmentDraftCommand(assessmentId, TEACHER_UID));
+        when(assessmentAgentClient.generate(any(), anyString())).thenReturn(response("V1"));
+        GenerateAssessmentDraftResult v1 = ((GenerateAssessmentDraftOutcome.RevisionCreated) generateHandler.execute(
+                new GenerateAssessmentDraftCommand(assessmentId, TEACHER_UID, "gen-key"))).revision();
         entityManager.flush();
         entityManager.clear();
 
-        when(assessmentAgentClient.generate(any())).thenReturn(response("V2"));
-        GenerateAssessmentDraftResult v2 = regenerateHandler.execute(
-                new RegenerateAssessmentDraftCommand(assessmentId, TEACHER_UID, "harder"));
+        when(assessmentAgentClient.generate(any(), anyString())).thenReturn(response("V2"));
+        GenerateAssessmentDraftResult v2 = regenerateHandler.execute(new RegenerateAssessmentDraftCommand(
+                assessmentId, TEACHER_UID, "harder", v1.draftId(), "regen-key-1"));
         entityManager.flush();
         entityManager.clear();
 
-        when(assessmentAgentClient.generate(any())).thenReturn(response("V3"));
-        GenerateAssessmentDraftResult v3 = regenerateHandler.execute(
-                new RegenerateAssessmentDraftCommand(assessmentId, TEACHER_UID, "harder still"));
+        when(assessmentAgentClient.generate(any(), anyString())).thenReturn(response("V3"));
+        GenerateAssessmentDraftResult v3 = regenerateHandler.execute(new RegenerateAssessmentDraftCommand(
+                assessmentId, TEACHER_UID, "harder still", v2.draftId(), "regen-key-2"));
         entityManager.flush();
         entityManager.clear();
 
@@ -285,68 +274,28 @@ class AssessmentCreationFlowIntegrationTest {
         assertThat(v3.versionNumber()).isEqualTo(3);
         assertThat(List.of(v1.draftId(), v2.draftId(), v3.draftId())).doesNotHaveDuplicates();
 
-        List<GenerateAssessmentDraftResult> versions = listDraftVersionsHandler.execute(
-                new ListDraftVersionsCommand(assessmentId, TEACHER_UID));
+        List<cl.gradeops.ai.api.assessment.domain.model.AssessmentRevision> versions =
+                revisionAdapter.findAllByAssessmentId(new cl.gradeops.ai.api.assessment.domain.model.AssessmentId(assessmentId));
         assertThat(versions).hasSize(3);
-        assertThat(versions).extracting(GenerateAssessmentDraftResult::versionNumber)
+        assertThat(versions).extracting(cl.gradeops.ai.api.assessment.domain.model.AssessmentRevision::getVersionNumber)
                 .containsExactly(3, 2, 1);
-        assertThat(versions).extracting(GenerateAssessmentDraftResult::title)
+        assertThat(versions).extracting(cl.gradeops.ai.api.assessment.domain.model.AssessmentRevision::getTitle)
                 .containsExactly("V3", "V2", "V1");
 
         // None of the earlier versions were overwritten.
-        AssessmentDraftJpaEntity v1Entity = draftJpaRepository.findById(v1.draftId()).orElseThrow();
-        AssessmentDraftJpaEntity v2Entity = draftJpaRepository.findById(v2.draftId()).orElseThrow();
+        AssessmentRevisionJpaEntity v1Entity = revisionJpaRepository.findById(v1.draftId()).orElseThrow();
+        AssessmentRevisionJpaEntity v2Entity = revisionJpaRepository.findById(v2.draftId()).orElseThrow();
         assertThat(v1Entity.getTitle()).isEqualTo("V1");
         assertThat(v2Entity.getTitle()).isEqualTo("V2");
-        assertThat(v2Entity.getPreviousVersionId()).isEqualTo(v1.draftId());
-        AssessmentDraftJpaEntity v3Entity = draftJpaRepository.findById(v3.draftId()).orElseThrow();
-        assertThat(v3Entity.getPreviousVersionId()).isEqualTo(v2.draftId());
+        assertThat(v2Entity.getPreviousRevisionId()).isEqualTo(v1.draftId());
+        AssessmentRevisionJpaEntity v3Entity = revisionJpaRepository.findById(v3.draftId()).orElseThrow();
+        assertThat(v3Entity.getPreviousRevisionId()).isEqualTo(v2.draftId());
 
-        // Each of the three executions produced its own distinct AgentExecutionLog.
-        List<AgentExecutionLogJpaEntity> logs = logJpaRepository.findAll().stream()
-                .filter(l -> l.getAssessmentId().equals(assessmentId))
-                .toList();
-        assertThat(logs).hasSize(3);
-        assertThat(logs).extracting(AgentExecutionLogJpaEntity::getDraftId)
-                .containsExactlyInAnyOrder(v1.draftId(), v2.draftId(), v3.draftId());
-    }
-
-    @Test
-    void editAfterRegenerationUpdatesOnlyTheLatestVersion() {
-        UUID assessmentId = createBrief();
-
-        when(assessmentAgentClient.generate(any())).thenReturn(response("V1"));
-        GenerateAssessmentDraftResult v1 = generateHandler.execute(
-                new GenerateAssessmentDraftCommand(assessmentId, TEACHER_UID));
-        entityManager.flush();
-        entityManager.clear();
-
-        when(assessmentAgentClient.generate(any())).thenReturn(response("V2"));
-        GenerateAssessmentDraftResult v2 = regenerateHandler.execute(
-                new RegenerateAssessmentDraftCommand(assessmentId, TEACHER_UID, "harder"));
-        entityManager.flush();
-        entityManager.clear();
-
-        GenerateAssessmentDraftResult edited = updateHandler.execute(new UpdateAssessmentDraftCommand(
-                assessmentId, TEACHER_UID, "V2 edited by teacher", null, null, null, null, null));
-        entityManager.flush();
-        entityManager.clear();
-
-        // The edit landed on v2's row in place — same id, same version number.
-        assertThat(edited.draftId()).isEqualTo(v2.draftId());
-        assertThat(edited.versionNumber()).isEqualTo(2);
-        assertThat(edited.title()).isEqualTo("V2 edited by teacher");
-
-        // v1 is completely untouched by the edit.
-        AssessmentDraftJpaEntity v1Entity = draftJpaRepository.findById(v1.draftId()).orElseThrow();
-        assertThat(v1Entity.getTitle()).isEqualTo("V1");
-        assertThat(v1Entity.getVersionNumber()).isEqualTo(1);
-
-        // Still exactly two versions — the edit did not create a third.
-        List<GenerateAssessmentDraftResult> versions = listDraftVersionsHandler.execute(
-                new ListDraftVersionsCommand(assessmentId, TEACHER_UID));
-        assertThat(versions).hasSize(2);
-        assertThat(versions.get(0).title()).isEqualTo("V2 edited by teacher");
-        assertThat(versions.get(1).title()).isEqualTo("V1");
+        // Each of the three revisions has its own distinct source AgentAttempt.
+        assertThat(v1Entity.getSourceAgentAttemptId()).isNotNull();
+        assertThat(v2Entity.getSourceAgentAttemptId()).isNotNull();
+        assertThat(v3Entity.getSourceAgentAttemptId()).isNotNull();
+        assertThat(List.of(v1Entity.getSourceAgentAttemptId(), v2Entity.getSourceAgentAttemptId(),
+                v3Entity.getSourceAgentAttemptId())).doesNotHaveDuplicates();
     }
 }

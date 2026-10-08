@@ -457,23 +457,78 @@ curl -X PATCH http://localhost:8080/internal/teachers/pZ1mVr3qUBXyKn7oW8sNaC/fla
 
 ---
 
-### Assessment draft endpoints
+### Assessment authoring endpoints
 
-The current assessment creation slice is implemented under `/api/v1`.
+Implemented as of the **Assessment Authoring Operation Foundation** cut. All endpoints require a valid `Authorization: Bearer <Firebase_ID_Token>` header.
+
+> **Note:** `PATCH /api/v1/assessments/{id}/draft` is **retired** — it no longer exists. Teacher edits are saved via `POST /api/v1/assessments/{id}/revisions` which creates an immutable `HUMAN_EDITED` revision, preserving full provenance.
+
+#### Endpoint table
 
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/api/v1/assessments` | List current teacher's assessments. |
 | `POST` | `/api/v1/assessments` | Create assessment brief. |
-| `POST` | `/api/v1/assessments/{id}/draft` | Run Assessment Agent for the first draft. |
-| `POST` | `/api/v1/assessments/{id}/draft/regenerate` | Regenerate draft from adjustment notes and prior draft. |
-| `PATCH` | `/api/v1/assessments/{id}/draft` | Save teacher edits to draft. |
-| `GET` | `/api/v1/assessments/{id}/draft` | Get current draft. |
-| `GET` | `/api/v1/assessments/{id}/draft/versions` | List draft versions. |
+| `GET` | `/api/v1/assessments/{id}/draft` | Get the current revision (by `Assessment.currentRevisionId`). |
+| `GET` | `/api/v1/assessments/{id}/draft/versions` | List all revisions for this assessment (ordered by `versionNumber` descending). |
+| `GET` | `/api/v1/assessments/{id}/draft/generation-status` | Get the current generation operation status (one of: `NOT_STARTED`, `IN_PROGRESS`, `FAILED_RETRYABLE`, `FAILED_TERMINAL`, `INDETERMINATE`, `SUCCEEDED`). Returns `currentRevisionId` when `SUCCEEDED`. |
+| `POST` | `/api/v1/assessments/{id}/draft` | Trigger initial AI generation. Accepts an `Idempotency-Key` header (UUID, client-generated). Returns HTTP 202 while the operation is running. |
+| `POST` | `/api/v1/assessments/{id}/draft/regenerate` | Trigger regeneration from adjustment notes and the current revision. Accepts an `Idempotency-Key` header. Returns HTTP 202. |
+| `POST` | `/api/v1/assessments/{id}/draft/retry` | Retry a `FAILED_RETRYABLE` generation operation (no body, no idempotency key). HTTP 409 with `OPERATION_IN_PROGRESS` if already running. |
+| `POST` | `/api/v1/assessments/{id}/revisions` | Save teacher edits as a new `HUMAN_EDITED` revision. Requires `expectedRevisionId` (the current revision the teacher was viewing). Returns HTTP 409 `STALE_REVISION` if a newer revision exists. |
 
-The API calls `agents/` through `agentclient`; the frontend never calls the agents service directly. `api/` persists the assessment, draft version and `AgentExecutionLog` derived from the execution payload returned by `agents/`.
+#### Generation status response shape
 
-Current Assessment Agent provider/model fields are a compatibility detail while routing evolves. Normal API operations must send workflow capability, data classification, tenant policy context, and an authorized budget; they must not expose exact provider/model selection to web callers. `agents/` returns the resolved route as execution metadata. Provider/model override remains internal, permission-gated, and audited.
+```json
+{
+  "operationType": "GENERATE_INITIAL_REVISION",
+  "status": "SUCCEEDED",
+  "retryable": false,
+  "currentRevisionId": "revision-uuid-or-null",
+  "failureCode": null
+}
+```
+
+`status` is always one of: `NOT_STARTED`, `IN_PROGRESS`, `FAILED_RETRYABLE`, `FAILED_TERMINAL`, `INDETERMINATE`, `SUCCEEDED`.
+`currentRevisionId` is non-null only when `status == SUCCEEDED`.
+`failureCode` is non-null only when status is `FAILED_RETRYABLE` or `FAILED_TERMINAL`.
+
+#### Revision response shape (GET /draft and POST /revisions)
+
+```json
+{
+  "draftId": "revision-uuid",
+  "title": "...",
+  "context": "...",
+  "instructions": "...",
+  "objectives": ["..."],
+  "deliverables": ["..."],
+  "constraints": ["..."],
+  "versionNumber": 3,
+  "origin": "AI_GENERATED",
+  "actorId": "teacher-uid-or-null",
+  "reason": "adjustment notes or null",
+  "previousRevisionId": "prior-revision-uuid-or-null"
+}
+```
+
+`origin` is one of: `AI_GENERATED`, `HUMAN_EDITED`, `LEGACY_UNKNOWN`.
+`LEGACY_UNKNOWN` appears only on rows migrated from the pre-Foundation schema — never written by new application code.
+
+#### Idempotency
+
+`POST /draft` and `POST /draft/regenerate` both accept an `Idempotency-Key` header. Clients must send a fresh v4 UUID per distinct generation attempt. If the same key is reused while the operation is still in flight, the API returns the current operation status (HTTP 200/202) rather than starting a new run.
+
+#### Authoring-specific error codes
+
+| HTTP status | Error code | When |
+|-------------|-----------|------|
+| 409 | `STALE_REVISION` | `POST /revisions` — `expectedRevisionId` no longer matches `Assessment.currentRevisionId` |
+| 409 | `OPERATION_IN_PROGRESS` | `POST /draft`, `POST /draft/regenerate`, or `POST /draft/retry` — another generation is already running |
+| 422 | `INVALID_EXPECTED_REVISION_ID` | `POST /revisions` — `expectedRevisionId` field missing or malformed |
+| 404 | `NOT_FOUND` | Assessment does not exist, or belongs to another teacher |
+
+The API calls `agents/` through `agentclient`; the frontend never calls the agents service directly. `api/` persists `AssessmentRevision` records and `AiOperation` (which replaces the old `AgentExecutionLog` for authoring) atomically.
 
 ---
 
