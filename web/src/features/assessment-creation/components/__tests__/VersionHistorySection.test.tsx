@@ -3,14 +3,59 @@ import VersionHistorySection from "../VersionHistorySection";
 import type { AssessmentDraftVersionViewModel } from "../../mappers/toAssessmentDraftBuilderPageViewModel";
 
 const manyVersions: AssessmentDraftVersionViewModel[] = [
-  { versionNumber: 4, isCurrent: true, previewLabel: "v4 (actual)", titlePreview: "Recursividad: Fibonacci con análisis" },
-  { versionNumber: 3, isCurrent: false, previewLabel: "v3", titlePreview: "Recursividad: Fibonacci con casos de prueba" },
-  { versionNumber: 2, isCurrent: false, previewLabel: "v2", titlePreview: "Recursividad: Fibonacci (revisado)" },
-  { versionNumber: 1, isCurrent: false, previewLabel: "v1", titlePreview: "Recursividad: Fibonacci" },
+  {
+    versionNumber: 4,
+    isCurrent: true,
+    previewLabel: "v4 (actual)",
+    titlePreview: "Recursividad: Fibonacci con análisis",
+    origin: "HUMAN_EDITED",
+    actorId: "teacher-42",
+    reason: null,
+    previousRevisionId: "draft-3",
+  },
+  {
+    versionNumber: 3,
+    isCurrent: false,
+    previewLabel: "v3",
+    titlePreview: "Recursividad: Fibonacci con casos de prueba",
+    origin: "AI_GENERATED",
+    actorId: null,
+    reason: "Agrega casos límite",
+    previousRevisionId: "draft-2",
+  },
+  {
+    versionNumber: 2,
+    isCurrent: false,
+    previewLabel: "v2",
+    titlePreview: "Recursividad: Fibonacci (revisado)",
+    origin: "AI_GENERATED",
+    actorId: null,
+    reason: null,
+    previousRevisionId: "draft-1",
+  },
+  {
+    versionNumber: 1,
+    isCurrent: false,
+    previewLabel: "v1",
+    titlePreview: "Recursividad: Fibonacci",
+    origin: "AI_GENERATED",
+    actorId: null,
+    reason: null,
+    previousRevisionId: null,
+  },
 ];
 
 const singleVersion: AssessmentDraftVersionViewModel[] = [
-  { versionNumber: 1, isCurrent: true, previewLabel: "v1 (actual)", titlePreview: "Recursividad: Fibonacci" },
+  {
+    versionNumber: 1,
+    isCurrent: true,
+    previewLabel: "v1 (actual)",
+    titlePreview: "Recursividad: Fibonacci",
+    origin: "AI_GENERATED",
+    actorId: null,
+    reason: null,
+    previousRevisionId: null,
+  },
 ];
 
 describe("VersionHistorySection", () => {
@@ -51,5 +96,57 @@ describe("VersionHistorySection", () => {
     render(<VersionHistorySection versions={manyVersions} selectedVersion={4} onViewVersion={jest.fn()} />);
 
     expect(screen.queryByRole("button", { name: /restaurar/i })).not.toBeInTheDocument();
+  });
+
+  it("shows the authoritative provenance (origin/actor) per row, replacing the old transient label", () => {
+    render(<VersionHistorySection versions={manyVersions} selectedVersion={4} onViewVersion={jest.fn()} />);
+
+    // v4 is HUMAN_EDITED by teacher-42
+    expect(screen.getByText(/Editado por teacher-42/)).toBeInTheDocument();
+    // v3/v2/v1 are AI_GENERATED
+    expect(screen.getAllByText("IA")).toHaveLength(3);
+  });
+
+  describe("LEGACY_UNKNOWN provenance", () => {
+    const legacyVersion: AssessmentDraftVersionViewModel = {
+      versionNumber: 1,
+      isCurrent: true,
+      previewLabel: "v1 (actual)",
+      titlePreview: "Evaluación legacy importada",
+      origin: "LEGACY_UNKNOWN",
+      actorId: null,
+      reason: null,
+      previousRevisionId: null,
+    };
+
+    it("renders a neutral label for LEGACY_UNKNOWN — not AI, not human edit", () => {
+      render(<VersionHistorySection versions={[legacyVersion]} selectedVersion={1} onViewVersion={jest.fn()} />);
+
+      expect(screen.getByText(/Procedencia histórica no verificable/i)).toBeInTheDocument();
+    });
+
+    it("does not render the AI label ('IA') for a LEGACY_UNKNOWN revision", () => {
+      render(<VersionHistorySection versions={[legacyVersion]} selectedVersion={1} onViewVersion={jest.fn()} />);
+
+      expect(screen.queryByText("IA")).not.toBeInTheDocument();
+    });
+
+    it("does not render a human-edit label for a LEGACY_UNKNOWN revision", () => {
+      render(<VersionHistorySection versions={[legacyVersion]} selectedVersion={1} onViewVersion={jest.fn()} />);
+
+      expect(screen.queryByText(/editado/i)).not.toBeInTheDocument();
+    });
+
+    it("renders without crashing when actorId is null (always null for LEGACY_UNKNOWN)", () => {
+      render(<VersionHistorySection versions={[{ ...legacyVersion, actorId: null }]} selectedVersion={1} onViewVersion={jest.fn()} />);
+
+      expect(screen.getByText(/Procedencia histórica no verificable/i)).toBeInTheDocument();
+    });
+
+    it("renders without crashing when reason is null (always null for LEGACY_UNKNOWN)", () => {
+      render(<VersionHistorySection versions={[{ ...legacyVersion, reason: null }]} selectedVersion={1} onViewVersion={jest.fn()} />);
+
+      expect(screen.getByText(/Procedencia histórica no verificable/i)).toBeInTheDocument();
+    });
   });
 });

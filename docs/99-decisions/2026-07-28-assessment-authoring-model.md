@@ -131,6 +131,24 @@ This is a read model, detailed in the [Authoring Operation Contract](2026-07-28-
 - Existing `assessment_drafts` rows are backfilled into `assessment_revisions` in a dedicated Flyway data migration (see [06-database-migration.md](../implementation-plans/assessment-authoring-operation-foundation/06-database-migration.md)). Rows that were never touched by `PATCH .../draft` migrate as `AI_GENERATED` with confidence; the row that was the *current* version at migration time for any assessment that has ever received a `PATCH` **cannot** be honestly labeled `AI_GENERATED` (its content may have been edited, but its `agentExecutionLogId` still points at the original AI run) — it migrates as `LEGACY_UNKNOWN` with `provenanceComplete = false` recorded in a migration note column. No approvals, publications, or human decisions are fabricated for any legacy row.
 - `assessment_drafts` and `agent_execution_logs` are kept, read-only, for one release after cutover, then retired in a follow-up task — not in this cut.
 
+> **Amendment — 2026-07-31 (Session D integration):** The original Migration Impact text above was written before V17 was finalized and contains a statement that requires correction: _"rows that were never touched by `PATCH .../draft` migrate as `AI_GENERATED` with confidence"_ is not accurate for V17 as implemented. The legacy `assessment_drafts` schema does **not** include an edit-timestamp column or any other signal that reliably distinguishes an unmodified AI output from an in-place edit. Without such a signal, no row can be classified as `AI_GENERATED` with confidence. The correction below supersedes that part of the original text; the reasoning and alternatives are preserved for audit transparency.
+>
+> **Final V17 rule (unconditional, implemented):**
+>
+> ```text
+> All assessment_drafts legacy rows:
+>   origin            = LEGACY_UNKNOWN
+>   provenanceComplete = false
+>   actorId           = null
+>   reason            = null
+> ```
+>
+> **Rationale for the correction:**
+> 1. The legacy schema conserved no edit-timestamp column, no edit-flag column, and no reliable indicator that a draft row was never modified after the agent wrote it. The absence of a `PATCH` *call* is not verifiable from the stored data — an in-place edit could have occurred without trace.
+> 2. Honest provenance requires positive evidence, not the absence of evidence. Classifying ambiguous rows as `AI_GENERATED` would fabricate a provenance claim the data does not support, contradicting the principle stated in this ADR's Decision section ("No approvals, publications, or human decisions are fabricated for any legacy row") and Research 01 §13 ("Legacy compatibility strategy").
+> 3. `sourceAgentAttemptId` can be preserved as a historical foreign key (it was a real agent run) without asserting that the current content still matches the agent's output — the FK records a structural relationship, not a content claim. V17 retains it.
+> 4. V17 implements the conservative unconditional rule atomically: the migration fails if any version chain has a gap that cannot be normalized structurally (verified by the gap-validation step before any INSERT). `assessment_drafts` and `agent_execution_logs` are retained read-only and are not dropped in this cut.
+
 ## Compatibility Impact
 
 - Single internal consumer (`web/`) — there is no third-party API consumer to preserve indefinite dual contracts for. The plan updates Web in the same cut rather than maintaining two parallel contracts.

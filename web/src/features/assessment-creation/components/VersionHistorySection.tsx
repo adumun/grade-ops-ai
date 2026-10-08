@@ -1,12 +1,30 @@
 "use client";
 
-import { useVersionHistorySection } from "../hooks/useVersionHistorySection";
+import { Badge } from "@/components/ds";
+import { useVersionHistorySection, type VersionHistoryRowViewModel } from "../hooks/useVersionHistorySection";
 import type { AssessmentDraftVersionViewModel } from "../mappers/toAssessmentDraftBuilderPageViewModel";
 
 interface VersionHistorySectionProps {
   versions: AssessmentDraftVersionViewModel[];
   selectedVersion: number;
   onViewVersion: (versionNumber: number) => void;
+}
+
+// Authoritative provenance from the API (origin/actorId), additive to the existing preview
+// fields — see docs/99-decisions/2026-07-28-authoring-operation-contract.md § 2/5/6.
+// LEGACY_UNKNOWN: historical records where the schema cannot confirm AI vs. human authorship.
+// Rendered with a neutral label and tone — never as AI-generated or human-edited.
+// actorId is nullable for both HUMAN_EDITED (when not recorded) and LEGACY_UNKNOWN (always null).
+function provenanceLabel(row: VersionHistoryRowViewModel): string {
+  if (row.origin === "AI_GENERATED") return "IA";
+  if (row.origin === "LEGACY_UNKNOWN") return "Procedencia histórica no verificable";
+  // HUMAN_EDITED — actorId may be null when not recorded
+  return row.actorId ? `Editado por ${row.actorId}` : "Editado";
+}
+
+function provenanceBadgeTone(row: VersionHistoryRowViewModel): "info" | "neutral" {
+  if (row.origin === "AI_GENERATED") return "info";
+  return "neutral";
 }
 
 export default function VersionHistorySection({ versions, selectedVersion, onViewVersion }: VersionHistorySectionProps) {
@@ -42,7 +60,10 @@ export default function VersionHistorySection({ versions, selectedVersion, onVie
                 color: "var(--text-body)",
               }}
             >
-              <span style={{ fontWeight: 600 }}>{row.previewLabel}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                <span style={{ fontWeight: 600, flexShrink: 0 }}>{row.previewLabel}</span>
+                <Badge tone={provenanceBadgeTone(row)}>{provenanceLabel(row)}</Badge>
+              </span>
               <span style={{ color: "var(--text-subtle)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {row.titlePreview}
               </span>
