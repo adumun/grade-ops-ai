@@ -1,4 +1,5 @@
 export type LucideIconName =
+  | "menu"
   | "layout-dashboard"
   | "file-pen-line"
   | "library"
@@ -31,6 +32,7 @@ interface LucideIconProps {
 }
 
 const ICON_PATHS: Record<LucideIconName, string> = {
+  "menu": `<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>`,
   "layout-dashboard": `<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>`,
   "file-pen-line": `<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>`,
   "library": `<path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>`,
