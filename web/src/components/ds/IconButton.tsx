@@ -6,6 +6,7 @@ interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
   label: string;
   size?: "sm" | "md";
   children: React.ReactNode;
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
 const SIZES = { sm: 32, md: 40 } as const;
@@ -15,6 +16,7 @@ export default function IconButton({
   size = "md",
   children,
   style,
+  ref,
   ...props
 }: IconButtonProps) {
   const [hovered, setHovered] = useState(false);
@@ -22,6 +24,7 @@ export default function IconButton({
 
   return (
     <button
+      ref={ref}
       title={label}
       aria-label={label}
       style={{
