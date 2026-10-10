@@ -11,6 +11,7 @@ const config: Config = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^firebase/(.*)$": "<rootDir>/src/test/__mocks__/firebase/$1",
+    "\\.module\\.css$": "<rootDir>/src/test/styleMock.js",
   },
   setupFilesAfterEnv: ["@testing-library/jest-dom"],
 };

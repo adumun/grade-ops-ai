@@ -1,0 +1,10 @@
+.filterBar { --filter-gap: 12px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; align-items: end; gap: var(--filter-gap); min-width: 0; padding: 14px; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--surface-card); }
+.filterField { display: grid; min-width: 0; gap: 5px; }
+.filterLabel { overflow: hidden; color: var(--text-subtle); font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.filterControl { min-width: 0; width: 100%; }
+.filterControl :global(input), .filterControl :global(select) { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filterControl select { min-width: 0; width: 100%; min-height: 40px; box-sizing: border-box; border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0 30px 0 10px; color: var(--text-body); background: var(--surface-card); font: inherit; }
+.clearFilters { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; min-width: 88px; white-space: nowrap; }
+@media (max-width: 1100px) { .filterBar { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 780px) { .filterBar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .filterBar { grid-template-columns: 1fr; }.clearFilters { width: 100%; } }

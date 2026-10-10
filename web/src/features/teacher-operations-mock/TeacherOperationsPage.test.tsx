@@ -1,6 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import TeacherOperationsPage from "./TeacherOperationsPage";
+import { ShellProvider } from "@/components/shell/ShellContext";
+
+const renderPage = () => render(<ShellProvider><TeacherOperationsPage /></ShellProvider>);
 
 jest.mock("./TeacherOperationsPage.module.css", () => ({
   previewFrame: "previewFrame",
@@ -63,28 +66,36 @@ jest.mock("./TeacherOperationsPage.module.css", () => ({
 describe("TeacherOperationsPage states", () => {
   it("centers the empty queue content in its own primary area", async () => {
     const user = userEvent.setup();
-    render(<TeacherOperationsPage />);
+    renderPage();
 
     await user.selectOptions(screen.getByLabelText("Estado de demo"), "empty");
 
     const emptyState = screen.getByText("No tienes tareas pendientes").parentElement;
     expect(emptyState).toHaveClass("emptyState");
     expect(emptyState?.closest("section")).toHaveAttribute("aria-labelledby", "attention-title");
-    expect(screen.getByRole("button", { name: /ver todas en operaciones/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /ver todas en operaciones/i })).toHaveAttribute("href", "/preview/operations");
+  });
+
+  it("uses real operation links from the sidebar and queue CTAs", () => {
+    renderPage();
+
+    expect(screen.getByRole("link", { name: "Operaciones" })).toHaveAttribute("href", "/preview/operations");
+    expect(screen.getByRole("link", { name: /ver todas en operaciones/i })).toHaveAttribute("href", "/preview/operations");
+    expect(screen.getAllByRole("button", { name: /ver contexto|revisar entregas|ver incompletas/i })).not.toHaveLength(0);
   });
 
   it("disables data-dependent actions while loading but leaves global navigation available", async () => {
     const user = userEvent.setup();
-    render(<TeacherOperationsPage />);
+    renderPage();
 
     await user.selectOptions(screen.getByLabelText("Estado de demo"), "loading");
 
     expect(screen.getAllByLabelText("Cargando Inicio").length).toBe(2);
     expect(screen.getByLabelText("institution")).toBeDisabled();
     expect(screen.getByRole("button", { name: "Limpiar" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /ver todas en operaciones/i })).toBeDisabled();
+    expect(screen.queryByRole("link", { name: /ver todas en operaciones/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ver calendario" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Ver en Operaciones" })).toBeDisabled();
+    expect(screen.queryByRole("link", { name: "Ver en Operaciones" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Abrir navegación" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Notificaciones" })).toBeEnabled();
   });

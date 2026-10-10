@@ -1,0 +1,7 @@
+.rowActionGroup { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.primaryAction, .contextAction { flex: 0 1 auto; min-width: 0; }
+.contextAction { text-decoration: underline; }
+.secondaryActionLink { display: inline-flex; align-items: center; width: fit-content; max-width: 100%; color: var(--brand-hover); font-size: 13px; font-weight: 600; line-height: 1.4; text-decoration: none; }
+.secondaryActionLink:hover { color: var(--brand); text-decoration: underline; }
+.secondaryActionLink:focus-visible { border-radius: var(--radius-sm); outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+@media (max-width: 780px) { .rowActionGroup { align-items: stretch; flex-direction: column; width: 100%; }.primaryAction, .contextAction { width: 100%; } }

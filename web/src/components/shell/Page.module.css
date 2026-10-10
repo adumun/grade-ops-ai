@@ -1,0 +1,11 @@
+.page { display: grid; grid-template-columns: minmax(0, 3fr) minmax(180px, 1fr); gap: 24px; width: 100%; max-width: 1440px; margin: 0 auto; align-content: start; }
+.page > * { min-width: 0; }
+:where(.page > *) { grid-column: 1 / -1; }
+.pageHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.pageHeader h1 { margin: 7px 0 4px; color: var(--text-strong); font: 600 32px/1.1 var(--font-display); }
+.pageHeader p { margin: 0; color: var(--text-muted); }
+.pageHeaderActions { display: flex; align-items: end; gap: 10px; flex-shrink: 0; }
+.eyebrow { color: var(--brand); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.pageSection { min-width: 0; }
+@media (max-width: 980px) { .page { grid-template-columns: 1fr; }.pageHeader { gap: 16px; } }
+@media (max-width: 640px) { .pageHeader { display: grid; }.pageHeader h1 { font-size: 28px; }.pageHeaderActions { justify-content: space-between; } }
