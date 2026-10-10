@@ -4,7 +4,7 @@ import type { APIRequestContext } from "@playwright/test";
 // same emulator, same admin-bypass mechanism, kept in one place so every spec/fixture that
 // needs a real authenticated teacher uses the identical, already-verified sequence.
 const FIREBASE_EMULATOR_HOST = process.env.E2E_FIREBASE_EMULATOR_HOST ?? "localhost:9099";
-const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "fake-api-key";
+const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "local-emulator-only";
 const API_BASE_URL = process.env.E2E_API_BASE_URL ?? "http://localhost:8080";
 
 export interface EmulatorTeacher {

@@ -1,3 +1,5 @@
+<a id="top"></a>
+
 # 14 — Checklists
 
 ## Checklist de nueva feature frontend
@@ -148,3 +150,16 @@
 - [ ] Estados de error no exponen datos sensibles.
 - [ ] Rollback considerado.
 - [ ] Cambios breaking comunicados.
+
+## Checklist de validación local ADÜMÜN
+
+- [ ] `make deps` confirma toolchain, manifests, lockfile y dependencias instaladas.
+- [ ] `make lint`, `make test` y `make build` ejecutados para el alcance declarado.
+- [ ] `make validate` ejecutado sin incluir smoke E2E ni servicios remotos.
+- [ ] `make doctor` y `git diff --check` ejecutados.
+- [ ] Smoke visual/Playwright ejecutado aparte cuando sus precondiciones están disponibles.
+- [ ] La evidencia distingue Web, monorepo completo y bloqueos ambientales.
+
+---
+
+[← Índice de la carpeta](README.md) · [Siguiente →](15-backend-frontend-contracts.md) · [↑ Volver al inicio](#top)

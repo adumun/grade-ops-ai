@@ -154,6 +154,13 @@ Deben documentar la semántica del entorno local.
 - No usar \`develop\` como fallback implícito.
 - \`down\` no debe borrar volúmenes ni datos salvo que exista un objetivo destructivo separado y documentado.
 
+Para el perfil Web existen además objetivos especializados, sin sustituir la
+interfaz canónica: \`make preview\` y \`make preview-smoke\` validan \`/preview\`
+con datos mock y sin API/Firebase; \`make smoke\` delega al flujo de integración
+local completo con PostgreSQL, API y Firebase Auth Emulator. El perfil
+\`develop\` se reserva para rutas protegidas y requiere configuración pública
+Firebase real.
+
 ### \`make test\`
 
 Debe ejecutar la suite tecnológica determinista del alcance declarado.
@@ -211,6 +218,11 @@ npm run build
 
 Si falla por configuración preexistente, por ejemplo Firebase, el fallo debe conservarse y reportarse con su causa. No convertirlo artificialmente en éxito.
 
+El wrapper valida primero las variables públicas Firebase requeridas para
+\`develop\` y distingue variables ausentes o placeholders de un fallo real de
+compilación. \`/preview\` no inicializa Firebase durante build ni necesita esas
+variables.
+
 ### \`make doctor\`
 
 Debe ser rápido y side-effect-safe.
@@ -266,6 +278,10 @@ Mantener separado:
 - \`scripts/smoke-e2e-local.sh\`: flujo que requiere Docker, API, agentes, Firebase, variables y datos reales.
 
 No incluir el script de backend E2E dentro de \`make validate\` si requiere servicios o credenciales no reproducibles.
+
+El smoke de \`/preview\` usa \`web/playwright.preview.config.ts\`, inicia su propio
+servidor Next temporal y no deja procesos huérfanos. El smoke de integración
+existente se mantiene separado en \`make smoke\` y conserva sus precondiciones.
 
 La validación visual de WEBUI-001 debe conservar:
 

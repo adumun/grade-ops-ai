@@ -5,6 +5,11 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 function getToken(): Promise<string | undefined> {
   return new Promise((resolve) => {
+    if (!auth) {
+      resolve(undefined);
+      return;
+    }
+
     if (auth.currentUser) {
       auth.currentUser.getIdToken().then(resolve).catch(() => resolve(undefined));
       return;
@@ -42,7 +47,9 @@ export async function apiClient(
         window.location.replace("/verify-email");
       }
     } else {
-      await signOut(auth).catch(() => {});
+      if (auth) {
+        await signOut(auth).catch(() => {});
+      }
       if (typeof window !== "undefined") {
         window.location.replace("/login?reason=expired");
       }

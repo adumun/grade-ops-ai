@@ -20,7 +20,7 @@ function VerifyEmailForm() {
   useEffect(() => {
     const alreadySent = searchParams.get("sent") === "1";
     if (!alreadySent) {
-      const currentUser = auth.currentUser;
+      const currentUser = auth?.currentUser;
       if (currentUser) {
         sendEmailVerification(currentUser).catch(() => {
           // Ignore — Firebase may have already sent one recently.
@@ -51,7 +51,7 @@ function VerifyEmailForm() {
   }, [cooldown]);
 
   async function handleResend() {
-    const currentUser = auth.currentUser;
+    const currentUser = auth?.currentUser;
     if (!currentUser) return;
 
     await sendEmailVerification(currentUser).catch(() => {
@@ -61,7 +61,7 @@ function VerifyEmailForm() {
   }
 
   async function handleCheckVerified() {
-    const currentUser = auth.currentUser;
+    const currentUser = auth?.currentUser;
     if (!currentUser) return;
 
     setCheckingVerification(true);
@@ -80,7 +80,7 @@ function VerifyEmailForm() {
   }
 
   async function handleSignOut() {
-    await auth.signOut();
+    await auth?.signOut();
     router.push("/login");
   }
 

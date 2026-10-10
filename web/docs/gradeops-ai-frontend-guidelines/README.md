@@ -1,3 +1,5 @@
+<a id="top"></a>
+
 # GradeOps AI — Reglas de codificación y buenas prácticas Frontend
 
 Este paquete define el estándar base para construir la interfaz docente de GradeOps AI con Next.js, React, TypeScript y un Design System consistente.
@@ -39,6 +41,11 @@ Esta documentación está escrita para:
 | `15-backend-frontend-contracts.md` | Contratos API, DTOs, estados, errores y coordinación con el backend Java. |
 | `16-make-validation-and-agent-execution.md` | Wrapper Make, quality gates deterministas y handoff operativo para agentes de desarrollo. |
 
+La adopción Make descrita en el documento 16 se implementa actualmente en la
+fachada raíz y cubre únicamente Web. `make test` mantiene las pruebas
+deterministas separadas del smoke visual y de los E2E que requieren servicios,
+credenciales o datos reales.
+
 ## Regla principal
 
 > La página compone. El componente presenta. El hook decide la interacción. El servicio habla con el exterior. El Design System mantiene la coherencia.
@@ -71,3 +78,7 @@ Esta documentación está escrita para:
 | Hook de componente | Hook local que concentra estado, derivaciones, handlers y efectos de un componente. |
 | Page Data Loader | Fachada por pantalla que orquesta varias llamadas API y devuelve un view model listo para render. |
 | Maqueta funcional | Implementación navegable con datos fake o simulados, útil para validar UX antes de conectar backend. |
+
+---
+
+[← README del repositorio](../../README.md) · [↑ Volver al inicio](#top)

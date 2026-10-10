@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
+import { auth, firebaseConfigError } from "@/lib/firebase/client";
 import { registerTeacher } from "@/lib/api/auth";
 import AppLogo from "@/components/brand/AppLogo";
 import { Button, Input, FieldWithHelper, GoogleButton, LucideIcon } from "@/components/ds";
@@ -41,6 +41,10 @@ function LoginForm() {
   async function onSubmit(data: LoginFields) {
     setServerError(null);
     try {
+      if (!auth) {
+        throw new Error("Firebase Auth is not configured for this browser.");
+      }
+
       const credential = await signInWithEmailAndPassword(auth, data.email, data.password);
       if (credential.user.emailVerified === false) {
         router.push("/verify-email");
@@ -70,6 +74,13 @@ function LoginForm() {
           <p style={{ margin: "0 0 24px", color: "var(--text-muted)", fontSize: "var(--text-md)" }}>
             Entra para crear y corregir evaluaciones con IA.
           </p>
+
+          {firebaseConfigError && (
+            <div role="alert" style={{ marginBottom: 20, padding: "12px 14px", background: "var(--warning-50)", border: "1px solid var(--warning-200)", borderRadius: "var(--radius-md)", color: "var(--warning-700)", fontSize: "var(--text-sm)" }}>
+              <strong>Autenticación no configurada</strong>
+              <p style={{ margin: "6px 0 0" }}>{firebaseConfigError}</p>
+            </div>
+          )}
 
           {reason === "expired" && (
             <div

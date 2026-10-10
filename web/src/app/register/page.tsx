@@ -41,6 +41,10 @@ export default function RegisterPage() {
     setServerError(null);
     let firebaseUser: User | null = null;
     try {
+      if (!auth) {
+        throw new Error("Firebase Auth is not configured for this browser.");
+      }
+
       const credential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       firebaseUser = credential.user;
       const idToken = await credential.user.getIdToken();

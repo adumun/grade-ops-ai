@@ -159,9 +159,13 @@ function UserRow({ user }: { user: User | null }) {
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { config } = useShell();
-  const [user, setUser] = useState<User | null>(auth.currentUser);
+  const [user, setUser] = useState<User | null>(auth?.currentUser ?? null);
 
   useEffect(() => {
+    if (!auth) {
+      return;
+    }
+
     return onAuthStateChanged(auth, setUser);
   }, []);
 
