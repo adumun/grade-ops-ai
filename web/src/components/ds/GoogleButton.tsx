@@ -54,6 +54,10 @@ export default function GoogleButton({ onSuccess, loading: externalLoading, disa
     setHovered(false);
     setInternalLoading(true);
     try {
+      if (!auth) {
+        throw new Error("Firebase Auth is not configured for this browser.");
+      }
+
       const result = await signInWithPopup(auth, new GoogleAuthProvider());
       const idToken = await result.user.getIdToken();
       const displayName = result.user.displayName ?? result.user.email ?? "";

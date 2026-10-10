@@ -8,6 +8,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
   block?: boolean;
   iconRight?: React.ReactNode;
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
 const SIZE_STYLES: Record<"sm" | "md", React.CSSProperties> = {
@@ -42,6 +43,7 @@ export default function Button({
   children,
   disabled,
   style,
+  ref,
   ...props
 }: ButtonProps) {
   const [hovered, setHovered] = useState(false);
@@ -78,6 +80,7 @@ export default function Button({
 
   return (
     <button
+      ref={ref}
       disabled={isDisabled}
       style={{
         display: "inline-flex",

@@ -1,3 +1,5 @@
+<a id="top"></a>
+
 # AGENTS.md
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
@@ -61,6 +63,39 @@ terraform -chdir=terraform/environments/demo apply
 
 ### Docs (`docs/` — Markdown)
 No build step. Edit Markdown files directly. See `docs/AGENTS.md` for content rules.
+
+### Fachada Make y validación
+
+La interfaz estable para desarrollo local y quality gates del slice actual es la
+fachada Make en la raíz. Su alcance de adopción actual es únicamente `web/`;
+no implica que el monorepo completo esté validado.
+
+```bash
+make help       # objetivos, precondiciones y alcance
+make bootstrap  # npm ci reproducible usando web/package-lock.json
+make deps       # toolchain, manifests, lockfile y dependencias instaladas
+make lint       # cd web && npm run lint
+make test       # cd web && npm run test -- --runInBand
+make build      # cd web && npm run build
+make doctor     # comprobaciones rápidas y sin efectos destructivos
+make validate   # deps + lint + test + build; solo Web
+make preview    # /preview con mocks; no API ni Firebase
+make preview-smoke # Playwright aislado de /preview
+make smoke      # integración local completa; API + Postgres + Firebase Emulator
+```
+
+`make test` y `make validate` son gates deterministas. No incluyen
+`scripts/smoke-e2e-local.sh`, Playwright, servicios Compose, Firebase real ni
+APIs remotas. El smoke visual/E2E es evidencia complementaria y se ejecuta
+separadamente con sus precondiciones documentadas. La adopción del estándar
+ADÜMÜN se mantiene explícitamente parcial y debe contrastarse con una versión
+concreta de la fuente normativa.
+
+Los perfiles Web son explícitos: `local-preview` valida la maqueta mock sin
+servicios externos; `local-integration` usa la infraestructura local y el
+Firebase Auth Emulator; `develop` requiere la configuración pública real de
+Firebase para rutas protegidas y builds productivos. Ningún perfil genera
+credenciales ni usa `develop` como fallback silencioso.
 
 ## Architecture
 
@@ -134,3 +169,7 @@ Follow the plugin's generic worktree-per-child-planning convention (`.planning/G
 Primary runtime: Cloud Run (web, api, agents). Database: Cloud SQL PostgreSQL. Files: Cloud Storage. Secrets: Secret Manager. Logs: Cloud Logging.
 
 For local dev, use a local PostgreSQL instance and a Gemini API key (not Vertex AI) configured in `application-local.yml`.
+
+---
+
+[← README del repositorio](README.md) · [Siguiente: Reglas del repositorio →](RULES.md) · [↑ Volver al inicio](#top)

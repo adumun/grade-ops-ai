@@ -1,3 +1,5 @@
+<a id="top"></a>
+
 ```
  ██████╗ ██████╗  █████╗ ██████╗ ███████╗ ██████╗ ██████╗ ███████╗    █████╗ ██╗
 ██╔════╝ ██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔═══██╗██╔══██╗██╔════╝   ██╔══██╗██║
@@ -138,6 +140,9 @@ web/
 │   └── test/
 │       └── __mocks__/firebase/       # Jest mocks for firebase/app and firebase/auth
 ├── Dockerfile                        # Multi-stage build (builder → runner)
+├── e2e/                              # Playwright browser tests and fixtures
+├── scripts/                          # Local preview/integration test launchers
+├── playwright.preview.config.ts      # Chromium projects for local-preview smoke
 ├── next.config.ts                    # Rewrites: /api/* → localhost:8080 (dev)
 ├── tsconfig.json
 └── jest.config.ts
@@ -170,11 +175,11 @@ Create a `.env.local` file at the project root. All five variables are required;
 
 ```bash
 # .env.local
-NEXT_PUBLIC_FIREBASE_API_KEY=AIza...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=<project-id>.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=<project-id>
-NEXT_PUBLIC_FIREBASE_APP_ID=1:...:web:...
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+NEXT_PUBLIC_FIREBASE_API_KEY=__REQUIRED_FIREBASE_API_KEY__
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=__REQUIRED_FIREBASE_AUTH_DOMAIN__
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=__REQUIRED_FIREBASE_PROJECT_ID__
+NEXT_PUBLIC_FIREBASE_APP_ID=__REQUIRED_FIREBASE_APP_ID__
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=__REQUIRED_FIREBASE_MESSAGING_SENDER_ID__
 ```
 
 To pull the values from Terraform:
@@ -205,6 +210,50 @@ The dev server proxies API calls based on `next.config.ts`. By default it expect
 | `npm run lint` | Run ESLint across `src/` |
 | `npm run test` | Run Jest test suite |
 | `npm run test -- --watch` | Jest in watch mode |
+
+## Make facade
+
+From the repository root, the canonical development facade is provided by
+`make`. Its current adoption scope is Web only; it does not claim to validate
+the API, agents, infrastructure, or the complete monorepo.
+
+| Command | Underlying command or scope |
+|---------|-----------------------------|
+| `make bootstrap` | `npm ci` using `web/package-lock.json`; no config or secrets are created. |
+| `make deps` | Toolchain, manifests, lockfile, and installed dependency checks. |
+| `make lint` | `cd web && npm run lint` |
+| `make test` | `cd web && npm run test -- --runInBand`; deterministic Jest only. |
+| `make build` | `cd web && npm run build` |
+| `make doctor` | Fast, side-effect-safe repository and worktree checks. |
+| `make validate` | `deps`, `lint`, `test`, and `build` for Web only. |
+| `make preview` | Starts `/preview` with `local-preview`; no API, Firebase, or external credentials. |
+| `make preview-smoke` | Runs the isolated Playwright smoke for `/preview` and manages its dev server. |
+| `make smoke` | Runs full local integration through `web/scripts/e2e-test.sh`. |
+
+Visual smoke validation and `scripts/smoke-e2e-local.sh` remain separate from
+these deterministic gates because they require browser infrastructure,
+services, credentials, and/or real data. A failing build or environmental
+precondition is reported as-is; the Make wrapper does not turn it into a
+success.
+
+The browser-test indexes are [e2e/README.md](e2e/README.md) and
+[scripts/README.md](scripts/README.md). The root-level integration scripts are
+indexed in [../scripts/README.md](../scripts/README.md).
+
+### Environment profiles
+
+| Profile | Purpose | Requirements |
+|---|---|---|
+| `local-preview` | Deterministic mock at `/preview`. | Node, npm, installed Web dependencies, Chrome; no API or Firebase. |
+| `local-integration` | Full browser flow against local services. | Docker, Postgres, Firebase Auth Emulator, API, Chrome; no real Firebase credentials. |
+| `develop` | Product-like Web build and protected routes. | Real public Firebase web configuration in the shell or `web/.env.local`; API is required at runtime for protected data. |
+
+`NEXT_PUBLIC_FIREBASE_*` values identify the Firebase web app and are public
+configuration, but they must be real values for `develop`; they are not server
+secrets. Firebase Admin keys, API secrets, Groq/Gemini keys and Render tokens
+remain private and are never placed in Web examples or browser variables.
+`make build` fails explicitly when required public Firebase variables are
+missing or still placeholders. It never generates or substitutes a key.
 
 ---
 
@@ -243,3 +292,7 @@ docker run -p 3000:3000 grade-ops-web
 | [`grade-ops-ai-agents`](../agents/) | Spring AI agent runtime — Gemini-powered assessment pipeline |
 | [`grade-ops-ai-infra`](../infra/) | Terraform — GCP infrastructure provisioning |
 | [`grade-ops-ai-docs`](../docs/) | Canonical product and architecture documentation |
+
+---
+
+[← README del repositorio](../README.md) · [↑ Volver al inicio](#top)

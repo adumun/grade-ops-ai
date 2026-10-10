@@ -49,6 +49,7 @@ This is a **monorepo**. Each subdirectory is a self-contained component of the p
 | [`infra/`](infra/) | Cloud infrastructure | Terraform · Google Cloud Run · Cloud SQL · Secret Manager | [infra/README.md](infra/README.md) |
 | [`docs/`](docs/) | Product and architecture documentation | Markdown | [docs/README.md](docs/README.md) |
 | [`design-system/`](design-system/) | UI/UX governance and design workflow | Markdown · Figma workflow · WCAG 2.2 AA | [design-system/README.md](design-system/README.md) |
+| [`scripts/`](scripts/) | Local smoke and environment validation scripts | Bash · Node.js | [scripts/README.md](scripts/README.md) |
 
 ---
 
@@ -102,6 +103,12 @@ Agents generate and suggest — they never finalize scores, silently modify appr
 ---
 
 ## Local development
+
+The root `Makefile` is the stable development facade for the current Web
+adoption slice. Its deterministic gates cover Web only: `make deps`,
+`make lint`, `make test`, `make build`, `make doctor`, and `make validate`.
+Visual smoke and `scripts/smoke-e2e-local.sh` remain separate because they
+require browser infrastructure, services, credentials, and/or real data.
 
 ### Prerequisites
 

@@ -108,13 +108,13 @@ echo "=== 3. Starting web/ (next dev, pointed at the Firebase Auth Emulator) ===
 # NEXT_PUBLIC_* vars from process.env at dev-server-start time either way, and this avoids
 # ever touching the developer's own .env.local (task-13 needed a manual backup/restore
 # dance because it edited that file directly; this script never does).
-export NEXT_PUBLIC_FIREBASE_API_KEY="fake-api-key"
-export NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="demo-gradeops-smoke.firebaseapp.com"
-export NEXT_PUBLIC_FIREBASE_PROJECT_ID="demo-gradeops-smoke"
-export NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="demo-gradeops-smoke.firebasestorage.app"
-export NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="000000000000"
-export NEXT_PUBLIC_FIREBASE_APP_ID="1:000000000000:web:0000000000000000000000"
-export NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="G-XXXXXXXXXX"
+export NEXT_PUBLIC_FIREBASE_API_KEY="local-emulator-only"
+export NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="local-emulator.invalid"
+export NEXT_PUBLIC_FIREBASE_PROJECT_ID="local-emulator"
+export NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="local-emulator.invalid"
+export NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="local-emulator-only"
+export NEXT_PUBLIC_FIREBASE_APP_ID="local-emulator-only"
+export NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=""
 export NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST="$FIREBASE_EMULATOR_HOST"
 
 npm run dev > "$WEB_LOG" 2>&1 &

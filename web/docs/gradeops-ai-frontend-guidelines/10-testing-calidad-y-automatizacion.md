@@ -1,3 +1,5 @@
+<a id="top"></a>
+
 # 10 — Testing, calidad y automatización
 
 ## 1. Objetivo
@@ -135,6 +137,13 @@ npm run build
 
 Si un comando no puede ejecutarse localmente por entorno, documentar la razón en el PR.
 
+La fachada raíz `make` expone estos mismos comandos para el alcance actual de
+Web: `make lint`, `make test` y `make build`. `make validate` los compone junto
+con `make deps`. Estos gates son deterministas y no levantan servidores ni
+incluyen Playwright o `scripts/smoke-e2e-local.sh`; el smoke visual/E2E debe
+ejecutarse separadamente con sus precondiciones. La adopción ADÜMÜN es parcial
+y no debe presentarse como validación del monorepo completo.
+
 ## 12. Regresiones
 
 Todo bug corregido debe agregar test si:
@@ -168,3 +177,7 @@ Una UI fácil de testear suele tener:
 - Estados explícitos.
 
 Si una pantalla es difícil de testear, probablemente está demasiado acoplada.
+
+---
+
+[← Índice de la carpeta](README.md) · [Siguiente →](11-seguridad-auth-y-privacidad.md) · [↑ Volver al inicio](#top)

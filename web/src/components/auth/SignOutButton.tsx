@@ -13,7 +13,7 @@ export default function SignOutButton() {
   async function handleSignOut() {
     setLoading(true);
     try {
-      const token = await auth.currentUser?.getIdToken();
+      const token = await auth?.currentUser?.getIdToken();
       // Best-effort server-side revocation (3s timeout)
       await Promise.race([
         fetch("/api/auth/sign-out", {
@@ -23,7 +23,9 @@ export default function SignOutButton() {
         new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 3000)),
       ]).catch(() => {}); // swallow — always sign out client-side
     } finally {
-      await firebaseSignOut(auth);
+      if (auth) {
+        await firebaseSignOut(auth);
+      }
       router.replace("/login");
     }
   }
