@@ -1,259 +1,320 @@
 <a id="top"></a>
 
-# WEBUI-001 — Estandarizar validación frontend con Make
+# WEBUI-001 — Adopción del estándar ADÜMÜN de validación y Make
 
 ## Propósito
 
-Este documento es una instrucción ejecutable para Codex CLI. Su objetivo es incorporar al repositorio el estándar de validación determinista del frontend y dejarlo documentado para futuras features de WebUI.
+Este documento es un paquete de implementación para Codex CLI. Define cómo debe adaptar GradeOps AI Web al estándar transversal de desarrollo ADÜMÜN, sin modificar la maqueta visual de WEBUI-001.
 
-La implementación debe realizarse en la rama:
+La implementación debe realizarse en:
 
 \`feat/teacher-operations-console-preview\`
 
-La rama debe partir del \`develop\` actualizado, que ya contiene el preview de Inicio docente integrado.
+La rama debe basarse en el \`develop\` actualizado.
 
-Este trabajo es de gobernanza y automatización de desarrollo. No debe rediseñar ni modificar la maqueta visual de WEBUI-001.
+## Corrección de autoridad
 
-## Fuentes que deben respetarse
+El estándar no se inventa dentro de GradeOps AI.
 
-La especificación se contrastó con:
+La autoridad normativa consultada es:
 
-- Google Drive: documento “GradeOps AI — Backlog de diseño WebUI”.
-- Repositorio: \`AGENTS.md\`.
-- Repositorio: \`RULES.md\`.
-- Repositorio: \`web/README.md\`.
-- Repositorio: \`web/docs/gradeops-ai-frontend-guidelines/README.md\`.
-- Repositorio: \`web/docs/gradeops-ai-frontend-guidelines/10-testing-calidad-y-automatizacion.md\`.
-- Repositorio: \`web/docs/gradeops-ai-frontend-guidelines/14-checklists.md\`.
-- Repositorio: \`web/package.json\`.
+- [adumun/platform-standards](https://github.com/adumun/platform-standards)
+- [STD-ENG-DEV-001 — Local Development & Environment Baseline](https://github.com/adumun/platform-standards/blob/main/engineering/STD-ENG-DEV-001-LOCAL-DEVELOPMENT-AND-ENVIRONMENT-BASELINE.md)
+- [STD-ENG-QUAL-001 — Testing & Quality Gates Baseline](https://github.com/adumun/platform-standards/blob/main/engineering/STD-ENG-QUAL-001-TESTING-AND-QUALITY-GATES-BASELINE.md)
+- [STD-ENG-WFM-001 — Work Planning and Traceability](https://github.com/adumun/platform-standards/blob/main/engineering/STD-ENG-WFM-001-WORK-PLANNING-AND-TRACEABILITY-STANDARD.md)
 
-## Hallazgo confirmado
+La implementación reusable de referencia es:
 
-Actualmente:
+- [adumun/react-components](https://github.com/adumun/react-components)
+- [Makefile de react-components](https://github.com/adumun/react-components/blob/master/Makefile)
+- [README de react-components](https://github.com/adumun/react-components/blob/master/README.md)
+
+La fuente de producto y alcance WebUI es:
+
+- [GradeOps AI — Backlog de diseño WebUI en Google Drive](https://docs.google.com/document/d/1yzbAQvDq00A7cuZPnyCLyxPk8mkz9gymcRxz9v610hM/edit?usp=drivesdk)
+
+Los documentos de Drive de normalización consultados confirman que:
+
+- \`adumun/platform-standards\` es la autoridad normativa actual;
+- los estándares y sus implementaciones deben mantenerse separados;
+- la conformance se demuestra contra una versión concreta del estándar;
+- Gitflow y worktrees forman parte del baseline de desarrollo;
+- la adopción de un estándar y su estado normativo son dimensiones distintas.
+
+## Estado actual de GradeOps AI
+
+En \`develop\` de GradeOps AI se verificó:
 
 - no existe \`Makefile\` en la raíz;
 - no existe \`web/Makefile\`;
-- \`AGENTS.md\` prescribe comandos directos de npm;
-- la guía frontend prescribe \`npm run lint\`, \`npm run test\` y \`npm run build\`;
-- existe \`npm run test:e2e\`, pero no está envuelto por Make;
-- existen scripts E2E en \`scripts/\`, pero requieren servicios, Docker, credenciales y configuración externa;
-- no existe un quality gate frontend canónico ejecutable como \`make web-validate\`.
+- \`AGENTS.md\` prescribe directamente comandos npm;
+- \`web/README.md\` prescribe directamente comandos npm;
+- la guía frontend prescribe Jest, Testing Library, lint y build;
+- existen scripts E2E, pero no están expuestos por una fachada Make;
+- la implementación actual no demuestra todavía conformance al baseline ADÜMÜN.
 
-## Objetivo técnico
+Esto es una brecha de adopción. No debe presentarse como si el estándar ya estuviera implementado.
 
-Crear un wrapper Make en la raíz del repositorio para que el flujo frontend tenga una puerta de entrada estable, explícita y auditable.
+## Qué debe adoptar GradeOps AI
 
-Los objetivos mínimos son:
+### 1. Fachada Make estable
 
-\`\`\`text
-make web-lint
-make web-test
-make web-build
-make web-validate
-\`\`\`
+El repositorio debe exponer una fachada Make estable para operaciones recurrentes. El Makefile es una interfaz de desarrollo; no es el lugar para duplicar lógica compleja.
 
-El smoke E2E debe permanecer separado:
+Los objetivos canónicos del estándar ADÜMÜN son:
 
 \`\`\`text
-make web-smoke
+make bootstrap
+make deps
+make up
+make down
+make test
+make doctor
 \`\`\`
 
-No debe ejecutarse automáticamente como parte de \`web-validate\` mientras dependa de servicios externos, credenciales, Firebase real, Docker o estado no controlado.
+Cuando aplica, también deben existir:
 
-## Archivos esperados
-
-Crear o modificar únicamente los archivos necesarios:
-
-- \`Makefile\`
-- \`AGENTS.md\`
-- \`web/README.md\`
-- \`web/docs/gradeops-ai-frontend-guidelines/README.md\`
-- \`web/docs/gradeops-ai-frontend-guidelines/10-testing-calidad-y-automatizacion.md\`
-- \`web/docs/gradeops-ai-frontend-guidelines/14-checklists.md\`
-- el \`README.md\` de la carpeta directa si las reglas de \`RULES.md\` lo exigen para cualquier carpeta nueva.
-
-No modificar:
-
-- \`data.ts\`;
-- componentes de la maqueta;
-- rutas visuales;
-- contratos API;
-- dependencias npm;
-- archivos generados;
-- \`.github/copilot-instructions.md\`;
-- cambios locales ajenos al alcance.
-
-## Diseño del Makefile
-
-El \`Makefile\` debe:
-
-1. usar objetivos declarados en \`.PHONY\`;
-2. ejecutar los comandos desde \`web/\` sin depender del directorio actual del usuario;
-3. fallar si falla cualquiera de los comandos subyacentes;
-4. no ocultar errores;
-5. no instalar dependencias automáticamente;
-6. no modificar archivos;
-7. no requerir interacción humana;
-8. documentar sus precondiciones;
-9. mantener los comandos tecnológicos definidos en \`web/package.json\` como fuente de verdad operativa;
-10. evitar duplicar lógica compleja dentro de Make.
-
-Los objetivos deben tener esta semántica:
-
-### \`web-install-check\`
-
-Comprobar que existen \`web/package.json\` y el lockfile esperado. No ejecutar una instalación automática. Si faltan dependencias, fallar con un mensaje accionable.
-
-### \`web-lint\`
-
-Ejecutar el lint oficial del frontend desde \`web/\`.
-
-Comando tecnológico esperado:
-
-\`\`\`bash
-npm run lint
+\`\`\`text
+make validate
+make lint
+make build
+make clean
+make help
 \`\`\`
 
-### \`web-test\`
+La implementación de referencia en \`react-components\` usa exactamente esta familia de objetivos:
 
-Ejecutar la suite determinista de Jest del frontend en modo no interactivo.
+- \`bootstrap\`
+- \`deps\`
+- \`up\`
+- \`down\`
+- \`test\`
+- \`typecheck\`
+- \`doctor\`
+- \`validate\`
+- \`build\`
+- \`clean\`
+- \`help\`
+
+No reemplazar esta convención por objetivos \`web-lint\`, \`web-test\` o \`web-validate\` como si fueran parte del estándar. En un monorepo pueden existir objetivos namespaced adicionales, pero deben ser una adaptación explícita y no sustituir silenciosamente los objetivos canónicos.
+
+### 2. Perfil frontend dentro del monorepo
+
+GradeOps AI contiene web, api, agents e infraestructura. Antes de decidir el significado global de \`make test\` o \`make validate\`, inspeccionar los comandos y Makefiles de cada componente.
+
+Para este slice frontend se permite una implementación incremental:
+
+- el Makefile raíz puede delegar a los comandos del perfil Web;
+- los objetivos raíz deben documentar claramente su alcance actual;
+- si \`make test\` ejecuta temporalmente solo Web, debe declararlo como una limitación de adopción;
+- no afirmar que el repositorio completo está validado si solo se validó Web;
+- los objetivos namespaced como \`make web-test\` pueden existir como conveniencia, pero no sustituyen la interfaz canónica.
+
+Si la arquitectura del monorepo requiere Makefiles por componente, crear \`web/Makefile\` con la misma interfaz canónica y hacer que el Makefile raíz la orqueste de manera explícita.
+
+## Requisitos mínimos del Makefile
+
+### \`make bootstrap\`
+
+Debe preparar el checkout local usando mecanismos reproducibles.
 
 Debe:
 
-- terminar por sí sola;
-- no entrar en watch mode;
-- devolver código distinto de cero ante fallos;
-- conservar mocks existentes;
-- permitir que el resultado sea reproducible en CI.
+- verificar el runtime esperado;
+- preparar dependencias según la política del repositorio;
+- respetar lockfiles;
+- no sobrescribir configuración local poblada sin intención explícita;
+- no introducir secretos;
+- documentar qué hace.
 
-Comando tecnológico esperado:
+No ejecutar instalaciones destructivas ni modificar archivos ajenos.
+
+### \`make deps\`
+
+Debe verificar el toolchain y dependencias requeridas.
+
+Como mínimo debe distinguir:
+
+- Node ausente;
+- npm ausente;
+- Make ausente;
+- versión incompatible;
+- dependencia no instalada;
+- lockfile ausente o incoherente cuando sea detectable.
+
+Puede seguir el patrón de \`react-components/Makefile\`, adaptándolo al monorepo.
+
+### \`make up\` y \`make down\`
+
+Deben documentar la semántica del entorno local.
+
+- Si el frontend no necesita levantar servicios para \`/preview\`, declararlo.
+- Si el monorepo requiere Docker Compose para API, base de datos o agentes, delegar explícitamente a Compose.
+- No iniciar servicios remotos silenciosamente.
+- No usar \`develop\` como fallback implícito.
+- \`down\` no debe borrar volúmenes ni datos salvo que exista un objetivo destructivo separado y documentado.
+
+### \`make test\`
+
+Debe ejecutar la suite tecnológica determinista del alcance declarado.
+
+Para Web:
 
 \`\`\`bash
+cd web
 npm run test -- --runInBand
 \`\`\`
 
-Si el repositorio tiene una convención distinta ya documentada, conservarla y explicarla. No inventar una suite nueva.
+El wrapper debe:
 
-### \`web-build\`
+- ser no interactivo;
+- no usar watch mode;
+- devolver código distinto de cero ante fallos;
+- conservar los mocks existentes;
+- no depender de Firebase real;
+- no depender de APIs remotas;
+- no depender de un servidor dev activo.
 
-Ejecutar el build oficial:
-
-\`\`\`bash
-npm run build
-\`\`\`
-
-Si el build falla por Firebase o configuración externa existente, no ocultar el fallo. Documentar exactamente la causa y distinguir:
-
-- error del cambio;
-- falta de configuración local;
-- bloqueo preexistente del repositorio.
-
-### \`web-validate\`
-
-Ser el quality gate determinista del frontend. Debe ejecutar, en orden claro:
-
-1. \`web-install-check\`;
-2. \`web-lint\`;
-3. \`web-test\`;
-4. \`web-build\`.
-
-No incluir \`web-smoke\` por defecto.
-
-Si el build no puede pasar localmente por una precondición conocida, el resultado debe quedar documentado en la salida del agente y en el PR. No convertir el fallo en éxito artificial.
-
-### \`web-smoke\`
-
-Envolver solamente el smoke E2E frontend existente y documentar sus precondiciones. No ejecutarlo como parte de \`web-validate\`.
-
-Debe quedar claro si usa:
-
-- servidor local;
-- Playwright;
-- Docker;
-- Firebase;
-- API o agentes;
-- credenciales;
-- variables de entorno.
-
-Si el smoke de la maqueta \`/preview\` no tiene un test automatizado estable, no inventar un falso wrapper. Registrar la brecha para una tarea posterior.
-
-## Pruebas deterministas de la maqueta
-
-Para WEBUI-001, verificar si ya existen tests de comportamiento para:
+Los tests deben cubrir comportamiento observable con Jest + Testing Library. Para WEBUI-001 verificar, como mínimo, si ya están cubiertos:
 
 - render de la cola;
-- máximo de cinco pendientes;
+- límite de cinco pendientes;
 - prioridades;
-- filtros;
+- filtros y limpieza;
 - estados de carga, vacío y error;
-- apertura y cierre del drawer;
+- drawer móvil;
 - cierre por botón;
 - cierre por overlay;
 - cierre por Escape;
 - \`aria-expanded\`;
-- \`aria-controls\`;
-- responsive no debe depender de snapshots frágiles.
+- \`aria-controls\`.
 
-Si falta cobertura determinista para una interacción lógica del drawer o de la cola, crear tests con Jest + Testing Library. Preferir:
+Agregar tests solo cuando falte cobertura lógica real. No usar Jest para afirmar propiedades CSS que requieren un navegador.
 
-\`\`\`ts
-screen.getByRole(...)
-screen.getByLabelText(...)
-screen.getByText(...)
+### \`make lint\`
+
+Debe delegar al lint oficial del componente:
+
+\`\`\`bash
+cd web
+npm run lint
 \`\`\`
 
-Evitar selectores por clases internas y \`data-testid\` cuando exista una alternativa semántica.
+### \`make build\`
 
-Las propiedades puramente CSS como columnas, gaps, \`position: fixed\` o media queries deben validarse mediante smoke visual o Playwright si existe infraestructura estable. No fingir que Jest valida el layout real del navegador.
+Debe delegar al build real:
 
-## Actualización documental obligatoria
+\`\`\`bash
+cd web
+npm run build
+\`\`\`
 
-Actualizar la documentación para que no existan dos estándares contradictorios.
+Si falla por configuración preexistente, por ejemplo Firebase, el fallo debe conservarse y reportarse con su causa. No convertirlo artificialmente en éxito.
 
-### \`AGENTS.md\`
+### \`make doctor\`
 
-Agregar una sección de comandos canónicos de validación frontend que indique:
+Debe ser rápido y side-effect-safe.
 
-- \`make web-lint\`;
-- \`make web-test\`;
-- \`make web-build\`;
-- \`make web-validate\`;
-- \`make web-smoke\` como flujo separado;
-- npm directo solo como diagnóstico o ejecución interna del wrapper.
+Debe verificar, según el alcance disponible:
 
-### \`web/README.md\`
+- archivos de control del repositorio;
+- toolchain;
+- lockfiles;
+- package manifests;
+- \`git diff --check\`;
+- configuración local relevante;
+- ausencia de secretos versionados;
+- coherencia básica de la estructura;
+- estado de worktree y rama cuando sea seguro leerlo.
 
-Actualizar “Available Scripts” o agregar una sección “Quality gates” explicando:
+No debe requerir una mutación destructiva.
 
-- cómo ejecutar validación canónica;
-- cómo ejecutar lint y tests individuales;
-- diferencia entre validación determinista y smoke E2E;
-- precondiciones del build;
-- cómo documentar bloqueos ambientales.
+### \`make validate\`
 
-### \`10-testing-calidad-y-automatizacion.md\`
+Debe componer quality gates deterministas del alcance documentado.
 
-Mantener Jest + Testing Library como stack y agregar que:
+Para el perfil Web, como mínimo:
 
-- el punto de entrada canónico es Make;
-- los comandos npm son la implementación tecnológica subyacente;
-- \`web-validate\` no incluye E2E externo;
-- un test determinista debe ejecutarse sin watch, credenciales ni servicios externos;
-- los bloqueos ambientales se reportan, no se silencian.
+\`\`\`text
+make deps
+make lint
+make test
+make build
+\`\`\`
 
-### \`14-checklists.md\`
+Puede delegar a objetivos del componente, pero debe reportar claramente si valida:
 
-Actualizar los quality gates y checklist de PR para exigir:
+- solo Web;
+- todo el monorepo;
+- o una combinación parcial.
 
-- \`make web-lint\`;
-- \`make web-test\`;
-- \`make web-build\`;
-- \`make web-validate\`;
-- \`make web-smoke\` solo cuando corresponda;
-- evidencia de cualquier bloqueo;
-- no presentar npm directo como sustituto del wrapper canónico.
+No incluir smoke E2E externo por defecto.
 
-## Reglas de ejecución para Codex
+### \`make help\`
+
+Debe documentar todos los objetivos públicos, sus precondiciones y su alcance.
+
+## Smoke E2E y validación visual
+
+El smoke visual del preview y los E2E de navegador son evidencia complementaria, no sustituto de los tests deterministas.
+
+Mantener separado:
+
+- \`make test\`: suite determinista;
+- \`make validate\`: quality gates reproducibles;
+- smoke visual/Playwright: validación de navegador;
+- \`scripts/smoke-e2e-local.sh\`: flujo que requiere Docker, API, agentes, Firebase, variables y datos reales.
+
+No incluir el script de backend E2E dentro de \`make validate\` si requiere servicios o credenciales no reproducibles.
+
+La validación visual de WEBUI-001 debe conservar:
+
+- desktop;
+- tablet;
+- teléfono;
+- scroll del shell;
+- drawer móvil;
+- ausencia de overflow horizontal;
+- responsive de la cola 3fr / 1fr.
+
+## Documentación que debe actualizar Codex
+
+Actualizar de forma consistente:
+
+- \`AGENTS.md\`;
+- \`web/README.md\`;
+- \`web/docs/gradeops-ai-frontend-guidelines/10-testing-calidad-y-automatizacion.md\`;
+- \`web/docs/gradeops-ai-frontend-guidelines/14-checklists.md\`;
+- README de cada carpeta tocada, conforme a \`RULES.md\`.
+
+La documentación debe distinguir:
+
+- estándar ADÜMÜN;
+- implementación Make de GradeOps;
+- comandos npm subyacentes;
+- adopción parcial;
+- bloqueos ambientales;
+- evidencia de conformance.
+
+No declarar “estándar activo” si la fuente normativa consultada mantiene estado \`PROPOSED\`. Declarar la versión y el estado observado.
+
+## Workflow Git y worktrees
+
+Aplicar el baseline ADÜMÜN:
+
+- Issue antes de implementación material;
+- branch auxiliar desde \`develop\`;
+- worktree aislado por unidad independiente;
+- PR hacia \`develop\`;
+- commits con referencia al Issue;
+- no modificar \`develop\` directamente;
+- no borrar cambios ajenos;
+- no usar reset destructivo;
+- no reutilizar una rama mergeada como contenedor permanente de trabajo nuevo sin explicitarlo.
+
+El cambio de Make/documentación debe ser una unidad trazable separada del follow-up visual si el Issue o el PR lo requieren.
+
+## Validación obligatoria de Codex
 
 Antes de editar:
 
@@ -269,54 +330,66 @@ Después de editar:
 
 \`\`\`bash
 git diff --check
-make web-lint
-make web-test
-make web-build
-make web-validate
+make help
+make deps
+make lint
+make test
+make build
+make doctor
+make validate
 \`\`\`
 
-Ejecutar \`make web-smoke\` solamente si sus precondiciones están disponibles y documentadas.
+Ejecutar \`make up\`, \`make down\` y smoke E2E solo con sus precondiciones documentadas.
 
-No ejecutar:
+Si un objetivo no existe, falla o solo cubre una parte del monorepo:
 
-- \`git reset --hard\`;
-- \`git clean\`;
-- \`git checkout --\`;
-- \`git stash\` sobre cambios ajenos;
-- instalaciones automáticas que modifiquen lockfiles;
-- commits de archivos fuera del alcance.
+- no inventar un resultado exitoso;
+- informar el objetivo exacto;
+- informar el comando subyacente;
+- informar el bloqueo;
+- clasificarlo como brecha de adopción.
 
-No crear commit, push ni Pull Request sin una instrucción posterior explícita.
+## Restricciones
+
+No:
+
+- modificar \`data.ts\`;
+- rediseñar la maqueta;
+- cambiar textos, prioridades, filtros o drawer;
+- agregar dependencias sin autorización;
+- modificar \`.github/copilot-instructions.md\`;
+- incluir cambios locales ajenos;
+- crear comandos ocultos o aliases no documentados;
+- hacer commit, push o PR sin instrucción explícita posterior.
 
 ## Criterios de aceptación
 
-El trabajo está terminado cuando:
+- Existe una fachada Make documentada.
+- Los objetivos canónicos ADÜMÜN están presentes o su ausencia queda explícitamente reportada.
+- \`make test\` ejecuta pruebas deterministas del alcance declarado.
+- \`make doctor\` existe y no es destructivo.
+- \`make validate\` compone los quality gates disponibles.
+- \`make build\` no oculta bloqueos ambientales.
+- Smoke E2E queda separado.
+- La documentación distingue WHAT normativo de HOW implementado.
+- Se reporta el estado de adopción sin exagerarlo.
+- Se respetan Gitflow, Issues, worktrees y PR hacia \`develop\`.
+- \`git diff --check\` pasa.
+- Los cambios ajenos permanecen intactos.
 
-- existe un \`Makefile\` raíz con los objetivos definidos;
-- \`make web-lint\` ejecuta el lint real;
-- \`make web-test\` ejecuta pruebas Jest no interactivas;
-- \`make web-build\` ejecuta el build real;
-- \`make web-validate\` compone los quality gates deterministas;
-- \`make web-smoke\` queda separado y documentado;
-- la documentación ya no prescribe únicamente npm directo;
-- las pruebas de interacción relevantes de WEBUI-001 están presentes o la brecha está explícitamente documentada;
-- \`git diff --check\` pasa;
-- los cambios ajenos permanecen intactos;
-- el agente reporta cada comando, resultado y bloqueo por separado.
+## Resultado que Codex debe reportar
 
-## Resultado esperado del agente
-
-El agente debe responder con:
-
-- rama actual;
+- rama y worktree;
+- Issue asociado;
 - archivos modificados;
 - objetivos Make ejecutados;
-- comandos npm subyacentes ejecutados;
-- resultado de cada validación;
-- tests nuevos o existentes relevantes;
+- comandos tecnológicos subyacentes;
+- alcance real de cada validación;
+- tests nuevos o existentes;
 - bloqueos ambientales;
+- conformance observada y brechas;
 - cambios ajenos preservados;
-- confirmación explícita de que no hizo commit, push ni PR.
+- confirmación de commit/push/PR, solo si fueron explícitamente autorizados.
 
 ---
 
