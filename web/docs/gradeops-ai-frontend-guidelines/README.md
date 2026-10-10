@@ -37,6 +37,7 @@ Esta documentación está escrita para:
 | `13-guia-ai-assisted-development.md` | Reglas para Copilot, Claude Code, Codex u otros agentes de desarrollo. |
 | `14-checklists.md` | Checklist operativo para features, componentes, PRs y releases frontend. |
 | `15-backend-frontend-contracts.md` | Contratos API, DTOs, estados, errores y coordinación con el backend Java. |
+| `16-make-validation-and-agent-execution.md` | Wrapper Make, quality gates deterministas y handoff operativo para agentes de desarrollo. |
 
 ## Regla principal
 
