@@ -11,7 +11,7 @@ import styles from "./AppShell.module.css";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const navigationId = pathname === "/preview/operations" ? "operations-inbox-nav" : "teacher-home-nav";
+  const navigationId = pathname?.startsWith("/preview/operations") ? "operations-inbox-nav" : "teacher-home-nav";
   const { config } = useShell();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);

@@ -54,4 +54,4 @@ fi
 
 echo "==> Running Playwright preview smoke"
 cd "$WEB_DIR" || exit 1
-PREVIEW_BASE_URL="$BASE_URL" npx playwright test e2e/preview.spec.ts --config=playwright.preview.config.ts
+PREVIEW_BASE_URL="$BASE_URL" npx playwright test e2e/preview.spec.ts e2e/assessment-evidence.spec.ts --config=playwright.preview.config.ts

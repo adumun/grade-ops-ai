@@ -2,6 +2,15 @@ export type OperationsQueue = "prepare" | "review" | "confirm" | "approve";
 export type DemoInboxState = "ready" | "loading" | "empty" | "error" | "readonly" | "permission";
 export type DueDateFilter = "all" | "overdue" | "today" | "upcoming";
 
+export interface OperationDestination {
+  label: string;
+  href: string;
+  context: string;
+  permission: "read" | "operate" | "approve";
+  returnPath: string;
+  implemented: boolean;
+}
+
 export interface DemoOperation {
   id: string;
   queue: OperationsQueue;
@@ -14,6 +23,8 @@ export interface DemoOperation {
   dueDateIso: string;
   reason: string;
   primaryAction: string;
+  primaryDestination: OperationDestination;
+  contextDestination: OperationDestination;
   originLabel: string;
   originPath: string;
   priority: "urgent" | "next" | "normal";
@@ -42,6 +53,8 @@ export const OPERATIONS: DemoOperation[] = [
     dueDateIso: "2026-10-12",
     reason: "Completa el alcance antes de enviar la evaluación a revisión.",
     primaryAction: "Preparar evaluación",
+    primaryDestination: { label: "Preparar evaluación", href: "/preview/operations/destinations/assessment-builder?operation=prepare-api-assessment", context: "Constructor y configuración de evaluación", permission: "operate", returnPath: "/preview/operations", implemented: false },
+    contextDestination: { label: "Ver contexto", href: "/preview", context: "Clase Programación II / Evaluaciones", permission: "read", returnPath: "/preview/operations", implemented: true },
     originLabel: "Clase Programación II",
     originPath: "Clases / Programación II / Evaluaciones",
     priority: "urgent",
@@ -60,6 +73,8 @@ export const OPERATIONS: DemoOperation[] = [
     dueDateIso: "2026-10-18",
     reason: "La evaluación está preparada, pero necesita una fecha de aplicación.",
     primaryAction: "Definir fecha",
+    primaryDestination: { label: "Definir fecha", href: "/preview/operations/destinations/date-config?operation=prepare-ecosystems", context: "Configuración de fecha de aplicación", permission: "operate", returnPath: "/preview/operations", implemented: false },
+    contextDestination: { label: "Ver contexto", href: "/preview", context: "Clase 8° Básico A / Evaluaciones", permission: "read", returnPath: "/preview/operations", implemented: true },
     originLabel: "Laboratorio de ecosistemas",
     originPath: "Clase 8° Básico A / Evaluaciones",
     priority: "next",
@@ -78,6 +93,8 @@ export const OPERATIONS: DemoOperation[] = [
     dueDateIso: "2026-10-10",
     reason: "10 entregas están listas y 2 requieren una revisión del procesamiento.",
     primaryAction: "Revisar entregas",
+    primaryDestination: { label: "Revisar entregas", href: "/preview/operations/submissions?operation=review-submissions", context: "Lista de entregas de API REST", permission: "operate", returnPath: "/preview/operations", implemented: true },
+    contextDestination: { label: "Ver contexto", href: "/preview", context: "Clase Programación II / Entrega API REST", permission: "read", returnPath: "/preview/operations", implemented: true },
     originLabel: "Entrega API REST",
     originPath: "Operaciones / Revisión de API REST",
     priority: "urgent",
@@ -97,6 +114,8 @@ export const OPERATIONS: DemoOperation[] = [
     dueDateIso: "2026-10-11",
     reason: "Identifica quién necesita apoyo antes del cierre de la actividad.",
     primaryAction: "Ver incompletas",
+    primaryDestination: { label: "Ver incompletas", href: "/preview/operations/submissions?operation=review-incomplete&view=incomplete", context: "Seguimiento de entregas incompletas", permission: "read", returnPath: "/preview/operations", implemented: true },
+    contextDestination: { label: "Ver contexto", href: "/preview", context: "Clase 8° Básico A / Proyecto de investigación", permission: "read", returnPath: "/preview/operations", implemented: true },
     originLabel: "Proyecto de investigación",
     originPath: "Operaciones / Entregas incompletas",
     priority: "next",
@@ -115,6 +134,8 @@ export const OPERATIONS: DemoOperation[] = [
     dueDateIso: "2026-10-12",
     reason: "La IA propuso cuatro criterios; confirma que representan tu intención pedagógica.",
     primaryAction: "Revisar rúbrica",
+    primaryDestination: { label: "Revisar rúbrica", href: "/preview/operations/destinations/rubric-review?operation=confirm-rubric", context: "Revisión de rúbrica de ecosistemas", permission: "approve", returnPath: "/preview/operations", implemented: false },
+    contextDestination: { label: "Ver contexto", href: "/preview", context: "Clase 8° Básico A / Rúbrica", permission: "read", returnPath: "/preview/operations", implemented: true },
     originLabel: "Rúbrica de ecosistemas",
     originPath: "Clase 8° Básico A / Rúbrica",
     priority: "next",
@@ -133,6 +154,8 @@ export const OPERATIONS: DemoOperation[] = [
     dueDateIso: "2026-10-10",
     reason: "4 propuestas de feedback esperan tu revisión antes de mostrarse al estudiante.",
     primaryAction: "Completar feedback",
+    primaryDestination: { label: "Completar feedback", href: "/preview/operations/destinations/feedback-review?operation=confirm-feedback", context: "Revisión de feedback generado por IA", permission: "operate", returnPath: "/preview/operations", implemented: false },
+    contextDestination: { label: "Ver contexto", href: "/preview", context: "Clase Programación II / Feedback API REST", permission: "read", returnPath: "/preview/operations", implemented: true },
     originLabel: "Feedback de API REST",
     originPath: "Revisión / Feedback de API REST",
     priority: "urgent",
@@ -151,6 +174,8 @@ export const OPERATIONS: DemoOperation[] = [
     dueDateIso: "2026-10-10",
     reason: "La propuesta fue editada y está lista para aprobarse antes de publicar.",
     primaryAction: "Aprobar feedback",
+    primaryDestination: { label: "Aprobar feedback", href: "/preview/operations/destinations/feedback-approval?operation=approve-feedback", context: "Aprobación de feedback de recursividad", permission: "approve", returnPath: "/preview/operations", implemented: false },
+    contextDestination: { label: "Ver contexto", href: "/preview", context: "Clase Programación II / Aprobaciones", permission: "read", returnPath: "/preview/operations", implemented: true },
     originLabel: "Feedback de recursividad",
     originPath: "Aprobaciones / Feedback de recursividad",
     priority: "urgent",
@@ -170,6 +195,8 @@ export const OPERATIONS: DemoOperation[] = [
     dueDateIso: "2026-10-14",
     reason: "El informe resume los resultados y las brechas detectadas en el curso.",
     primaryAction: "Revisar informe",
+    primaryDestination: { label: "Revisar informe", href: "/preview/operations/destinations/report-detail?operation=approve-report", context: "Detalle del informe trimestral", permission: "approve", returnPath: "/preview/operations", implemented: false },
+    contextDestination: { label: "Ver contexto", href: "/preview", context: "Clase 8° Básico A / Reportes", permission: "read", returnPath: "/preview/operations", implemented: true },
     originLabel: "Informe trimestral",
     originPath: "Reportes / Progreso trimestral",
     priority: "normal",

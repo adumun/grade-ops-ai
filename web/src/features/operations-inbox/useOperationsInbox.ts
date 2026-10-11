@@ -27,15 +27,25 @@ export const DEFAULT_INBOX_FILTERS: InboxFilters = {
 };
 
 export function useOperationsInbox() {
-  const [activeQueue, setActiveQueue] = useState<OperationsQueue>("review");
-  const [filters, setFilters] = useState<InboxFilters>(DEFAULT_INBOX_FILTERS);
-  const [search, setSearch] = useState("");
+  const [activeQueue, setActiveQueue] = useState<OperationsQueue>(() => getContextFromUrl().queue);
+  const [filters, setFilters] = useState<InboxFilters>(() => getContextFromUrl().filters);
+  const [search, setSearch] = useState(() => getContextFromUrl().search);
   const { demoState, setDemoState } = useDemoState();
-  const [notice, setNotice] = useState("Datos de demostración · los cambios no se guardan.");
+  const [notice, setNotice] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("returned") ? "Volviste a Operaciones; cola, búsqueda y filtros fueron restaurados." : "Datos de demostración · los cambios no se guardan.");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [actionErrorId, setActionErrorId] = useState<string | null>(null);
   const [attempts, setAttempts] = useState<Record<string, number>>({});
   const [contextTarget, setContextTarget] = useState<DemoOperation | null>(null);
+
+  function contextHref(operation: DemoOperation) {
+    const params = new URLSearchParams({ queue: activeQueue, search, className: filters.className, subject: filters.subject, status: filters.status, date: filters.date, returnPath: operation.contextDestination.returnPath });
+    return `${operation.contextDestination.href}${operation.contextDestination.href.includes("?") ? "&" : "?"}${params.toString()}`;
+  }
+
+  function destinationHref(operation: DemoOperation) {
+    const params = new URLSearchParams({ queue: activeQueue, search, className: filters.className, subject: filters.subject, status: filters.status, date: filters.date, returnPath: operation.primaryDestination.returnPath });
+    return `${operation.primaryDestination.href}${operation.primaryDestination.href.includes("?") ? "&" : "?"}${params.toString()}`;
+  }
 
   const queueCounts = useMemo(() => Object.fromEntries(QUEUES.map((queue) => [queue.id, OPERATIONS.filter((item) => item.queue === queue.id).length])) as Record<OperationsQueue, number>, []);
   const visibleOperations = useMemo(() => {
@@ -91,7 +101,8 @@ export function useOperationsInbox() {
         setNotice(`No pudimos completar “${operation.primaryAction}”. El contexto se conserva.`);
         return;
       }
-      setNotice(`${operation.primaryAction} completada en modo demo. Se conserva ${QUEUES.find((queue) => queue.id === activeQueue)?.label}.`);
+      setNotice(`${operation.primaryAction} completada en modo demo. Destino: ${operation.primaryDestination.context}.`);
+      if (process.env.NODE_ENV !== "test") window.location.assign(destinationHref(operation));
     }, 350);
   }
 
@@ -119,6 +130,24 @@ export function useOperationsInbox() {
     runAction,
     dateOptions: DATE_OPTIONS,
     notice,
+    contextHref,
+    destinationHref,
+  };
+}
+
+function getContextFromUrl(): { queue: OperationsQueue; filters: InboxFilters; search: string } {
+  if (typeof window === "undefined") return { queue: "review", filters: DEFAULT_INBOX_FILTERS, search: "" };
+  const params = new URLSearchParams(window.location.search);
+  const queue = params.get("queue");
+  return {
+    queue: queue === "prepare" || queue === "confirm" || queue === "approve" ? queue : "review",
+    search: params.get("search") ?? "",
+    filters: {
+      className: params.get("className") ?? DEFAULT_INBOX_FILTERS.className,
+      subject: params.get("subject") ?? DEFAULT_INBOX_FILTERS.subject,
+      status: params.get("status") ?? DEFAULT_INBOX_FILTERS.status,
+      date: (params.get("date") as DueDateFilter) ?? DEFAULT_INBOX_FILTERS.date,
+    },
   };
 }
 
