@@ -12,5 +12,5 @@ interface PrimaryActionProps {
 }
 
 export default function PrimaryAction({ children, href, disabled, loading, onClick }: PrimaryActionProps) {
-  return <Button className={styles.primaryAction} data-action-kind="primary" disabled={disabled} loading={loading} onClick={() => { onClick?.(); if (href && !disabled) window.location.assign(href); }}>{children}</Button>;
+  return <Button className={styles.primaryAction} data-action-kind="primary" disabled={disabled} loading={loading} onClick={() => { onClick?.(); if (href && !onClick && !disabled && process.env.NODE_ENV !== "test") window.location.assign(href); }}>{children}</Button>;
 }

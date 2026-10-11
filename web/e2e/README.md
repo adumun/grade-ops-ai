@@ -9,6 +9,7 @@ requieren la integración local con API, Postgres y Firebase Auth Emulator.
 | Archivo | Propósito |
 |---|---|
 | `preview.spec.ts` | HTTP, cola de cinco pendientes, responsive, scroll, overflow y drawer móvil de `/preview`. |
+| `assessment-evidence.spec.ts` | Navegación, contexto, capacidades separadas, retry y overflow de WEBUI-003. |
 | `login.spec.ts` | Login de navegador contra API y Firebase Emulator. |
 | `registration.spec.ts` | Registro real de navegador contra API y Firebase Emulator. |
 | `draft-builder.spec.ts` | Flujo del Draft Builder contra API local con datos sembrados. |

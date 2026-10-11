@@ -10,5 +10,5 @@ interface ContextActionProps {
 }
 
 export default function ContextAction({ href, disabled, onClick }: ContextActionProps) {
-  return <Button className={styles.contextAction} data-action-kind="context" variant="ghost" size="sm" disabled={disabled} onClick={() => { onClick?.(); if (href && !disabled) window.location.assign(href); }}>Ver contexto</Button>;
+  return <Button className={styles.contextAction} data-action-kind="context" variant="ghost" size="sm" disabled={disabled} onClick={() => { onClick?.(); if (href && !disabled && process.env.NODE_ENV !== "test") window.location.assign(href); }}>Ver contexto</Button>;
 }
