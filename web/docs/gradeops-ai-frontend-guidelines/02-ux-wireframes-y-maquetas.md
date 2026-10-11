@@ -168,3 +168,42 @@ Antes de implementar contra API real, debe existir una respuesta para:
 - Eventos de usuario.
 - Tests mínimos.
 - Riesgos de UX.
+
+
+## 11. Estándar de documentación antes de implementar
+
+Toda feature nueva debe tener un paquete documental revisable antes de abrir su Work Unit de código. No basta con una captura o una frase como “implementar esta pantalla”.
+
+El paquete debe definir:
+
+- objetivo del usuario y problema que resuelve;
+- flujo completo, entradas, salidas, retornos y navegación;
+- pantallas, rutas y acciones;
+- estados inicial, vacío, loading, guardando, éxito, error, retry, solo lectura y permisos;
+- datos necesarios y modelo conceptual preliminar;
+- decisiones confirmadas, pendientes y UNKNOWN;
+- qué se reutiliza, qué se compone y qué componentes React serían nuevos;
+- responsive, accesibilidad, copy y criterios de aceptación visual;
+- pruebas deterministas, smoke visual y gates Make;
+- límites de la maqueta y decisiones que pertenecen al backend.
+
+La documentación debe dividir el flujo en Work Units independientes. Cada Work Unit necesita entrada, salida, persistencia, navegación, estados, permisos, componentes, pruebas y aceptación propios. No debe depender de que todo el flujo esté construido para poder demostrarse.
+
+## 12. Guía para el implementador
+
+El paquete debe incluir una guía explícita para Codex o la persona desarrolladora:
+
+- Route/Page TSX: params, composición y navegación;
+- Page Hook: orquestación de pantalla;
+- hooks de dominio: operaciones del producto;
+- reglas puras: validaciones testeables sin React;
+- hooks de acceso a datos: abstracción de la fuente;
+- data sources: fixture, localStorage o API;
+- componentes presentacionales: props y eventos, sin acceso directo a datos.
+
+Si una decisión no está resuelta, debe permanecer visible como UNKNOWN. El implementador no debe inventar contratos ni convertir una limitación de la maqueta en una decisión de producto.
+
+## 13. Revisión previa obligatoria
+
+La revisión humana aprueba el paquete documental antes de crear el worktree de implementación. Después se implementa una Work Unit, se ejecutan los gates deterministas y se hace revisión visual. Si el código descubre una contradicción, se actualiza la documentación y se registra el cambio.
+
