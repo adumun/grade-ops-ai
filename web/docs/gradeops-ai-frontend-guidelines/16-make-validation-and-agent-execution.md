@@ -410,3 +410,31 @@ No:
 ---
 
 [← Guía frontend](README.md) · [↑ Volver al inicio](#top)
+
+
+## Estándar adicional: documentación previa a la implementación
+
+La adopción de Make y los quality gates comienza antes del código. Toda Work Unit debe referenciar un paquete documental aprobado que defina flujo, pantallas, datos, estados, permisos, componentes, arquitectura por capas, pruebas y criterios de aceptación.
+
+El handoff a Codex debe incluir:
+
+- rama y worktree esperados;
+- alcance exacto de la Work Unit;
+- archivos o zonas permitidas;
+- componentes que debe reutilizar;
+- componentes nuevos autorizados;
+- separación Route/Page TSX, Page Hook, dominio, acceso a datos y data source;
+- fixtures y estados demo;
+- comandos Make y comandos tecnológicos subyacentes;
+- criterios de cierre;
+- UNKNOWN y bloqueos que no debe resolver por inferencia.
+
+La documentación debe separar cuatro niveles:
+
+1. decisión de producto/UX;
+2. estándar de ingeniería;
+3. guía de implementación;
+4. evidencia de código y validación.
+
+No se debe declarar conformidad porque exista un Makefile o porque una pantalla funcione manualmente. La evidencia debe indicar qué se ejecutó, qué cubrió, qué falló y por qué.
+
