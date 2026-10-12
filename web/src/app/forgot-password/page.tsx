@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
                   variant="primary"
                   block
                   loading={isSubmitting}
-                  style={{ marginTop: 16 }}
+                  className="gops-button-space-top"
                 >
                   {isSubmitting ? "Enviando…" : "Enviar enlace"}
                 </Button>

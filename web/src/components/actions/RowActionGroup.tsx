@@ -4,6 +4,7 @@ import styles from "./ActionPrimitives.module.css";
 
 interface RowActionGroupProps {
   primaryLabel: string;
+  primaryIcon?: React.ReactNode;
   primaryHref?: string;
   primaryDisabled?: boolean;
   loading?: boolean;
@@ -13,6 +14,6 @@ interface RowActionGroupProps {
   onContext?: () => void;
 }
 
-export default function RowActionGroup({ primaryLabel, primaryHref, primaryDisabled = false, loading = false, onPrimary, contextHref, contextDisabled = false, onContext }: RowActionGroupProps) {
-  return <div className={styles.rowActionGroup} data-testid="row-action-group"><PrimaryAction href={primaryHref} disabled={primaryDisabled} loading={loading} onClick={onPrimary}>{primaryLabel}</PrimaryAction><ContextAction href={contextHref} disabled={contextDisabled || loading} onClick={onContext} /></div>;
+export default function RowActionGroup({ primaryLabel, primaryIcon, primaryHref, primaryDisabled = false, loading = false, onPrimary, contextHref, contextDisabled = false, onContext }: RowActionGroupProps) {
+  return <div className={styles.rowActionGroup} data-testid="row-action-group"><PrimaryAction href={primaryHref} startIcon={primaryIcon} disabled={primaryDisabled} loading={loading} onClick={onPrimary}>{primaryLabel}</PrimaryAction><ContextAction href={contextHref} disabled={contextDisabled || loading} onClick={onContext} /></div>;
 }

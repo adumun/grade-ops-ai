@@ -12,7 +12,7 @@
 .previewFrame, .appArea { min-height: 0; }
 .appArea > main { height: 0; flex: 1 1 auto; }
 .pageContent { min-width: 0; min-height: 100%; display: grid; grid-template-columns: minmax(0, 3fr) minmax(180px, 1fr); gap: 24px; align-content: start; box-sizing: border-box; }
-.operationsLink { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; padding: 0 12px; border-radius: var(--radius-md); color: var(--text-body); background: var(--brand); font: 500 var(--text-sm) var(--font-sans); text-decoration: none; }
+.operationsLink { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: 32px; padding: 0 12px; border-radius: var(--radius-md); color: var(--text-on-brand); background: var(--brand); font: 500 var(--text-sm) var(--font-sans); text-decoration: none; }
 .operationsLink:hover { background: var(--brand-hover); color: #fff; text-decoration: none; }
 .operationsLinkSecondary { padding: 2px 0; color: var(--brand-hover); background: transparent; font-size: 12px; text-decoration: underline; }
 .operationsLinkSecondary:hover { color: var(--brand-hover); background: transparent; }

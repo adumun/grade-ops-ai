@@ -36,7 +36,6 @@ export default function SignOutButton() {
       size="sm"
       onClick={handleSignOut}
       disabled={loading}
-      style={{ opacity: loading ? 0.5 : 1 }}
     >
       <LucideIcon name="log-out" size={16} />
     </IconButton>

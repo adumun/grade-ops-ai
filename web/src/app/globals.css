@@ -2,6 +2,7 @@
 @import "../styles/ds-tokens/colors.css";
 @import "../styles/ds-tokens/typography.css";
 @import "../styles/ds-tokens/spacing.css";
+@import "../styles/ds-tokens/components.css";
 @import "../styles/ds-tokens/base.css";
 
 /* ─── Override de fuentes DS con las variables inyectadas por next/font ───── */

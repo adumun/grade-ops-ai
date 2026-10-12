@@ -1,0 +1,29 @@
+/* Component tokens mirror the production web/src Design System contract. */
+:root {
+  --button-primary-bg: var(--brand);
+  --button-primary-hover-bg: var(--brand-hover);
+  --button-primary-active-bg: var(--brand-active);
+  --button-primary-fg: var(--text-on-brand);
+  --button-secondary-bg: var(--surface-card);
+  --button-secondary-hover-bg: var(--surface-sunken);
+  --button-secondary-fg: var(--text-body);
+  --button-secondary-border: var(--border-default);
+  --button-secondary-hover-border: var(--border-strong);
+  --button-ghost-bg: transparent;
+  --button-ghost-hover-bg: var(--surface-sunken);
+  --button-ghost-fg: var(--text-body);
+  --button-link-fg: var(--text-link);
+  --button-link-hover-bg: var(--surface-brand-soft);
+  --button-disabled-bg: var(--slate-200);
+  --button-disabled-fg: var(--slate-600);
+  --button-disabled-border: var(--slate-300);
+  --button-height-sm: 32px;
+  --button-height-md: 40px;
+  --button-height-lg: 48px;
+  --button-padding-sm: var(--space-3);
+  --button-padding-md: var(--space-4);
+  --button-padding-lg: var(--space-6);
+  --button-icon-sm: 16px;
+  --button-icon-md: 18px;
+  --button-icon-lg: 20px;
+}

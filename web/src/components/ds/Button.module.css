@@ -1,0 +1,52 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 0;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--type-label-font);
+  font-size: var(--text-md);
+  font-weight: var(--type-label-weight);
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.button:active:not(:disabled) { transform: translateY(1px); }
+.button:disabled { background: var(--button-disabled-bg); border-color: var(--button-disabled-border); color: var(--button-disabled-fg); cursor: not-allowed; opacity: 1; }
+.block { width: 100%; }
+
+.sm { height: var(--button-height-sm); padding-inline: var(--button-padding-sm); border-radius: var(--radius-sm); font-size: var(--text-sm); }
+.md { height: var(--button-height-md); padding-inline: var(--button-padding-md); }
+.lg { height: var(--button-height-lg); padding-inline: var(--button-padding-lg); border-radius: var(--radius-lg); font-size: var(--text-lg); }
+.sm .icon svg { width: var(--button-icon-sm); height: var(--button-icon-sm); }
+.md .icon svg { width: var(--button-icon-md); height: var(--button-icon-md); }
+.lg .icon svg { width: var(--button-icon-lg); height: var(--button-icon-lg); }
+
+.primary { background: var(--button-primary-bg); color: var(--button-primary-fg); }
+.primary:hover:not(:disabled) { background: var(--button-primary-hover-bg); box-shadow: var(--shadow-brand); }
+.primary:active:not(:disabled) { background: var(--button-primary-active-bg); }
+
+.secondary { background: var(--button-secondary-bg); border-color: var(--button-secondary-border); color: var(--button-secondary-fg); }
+.secondary:hover:not(:disabled) { background: var(--button-secondary-hover-bg); border-color: var(--button-secondary-hover-border); }
+
+.ghost { background: var(--button-ghost-bg); color: var(--button-ghost-fg); }
+.ghost:hover:not(:disabled) { background: var(--button-ghost-hover-bg); }
+
+.link { background: var(--button-ghost-bg); color: var(--button-link-fg); }
+.link:hover:not(:disabled) { background: var(--button-link-hover-bg); text-decoration: underline; }
+
+.icon { display: inline-flex; flex: 0 0 auto; color: currentColor; }
+.label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.spinner { width: 1em; height: 1em; flex: 0 0 auto; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: button-spin var(--dur-slow) linear infinite; }
+
+@keyframes button-spin { to { transform: rotate(360deg); } }

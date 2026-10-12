@@ -43,8 +43,8 @@ export default function DashboardEmptyState() {
         >
           Crea tu primera evaluación y empieza a corregir con IA.
         </p>
-        <Button variant="primary" style={{ marginTop: 24 }}>
-          + Nueva evaluación
+        <Button variant="primary" className="gops-button-space-top-lg" startIcon={<LucideIcon name="plus" size={16} />}>
+          Nueva evaluación
         </Button>
       </div>
     </div>

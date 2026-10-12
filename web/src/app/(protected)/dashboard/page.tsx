@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getAssessments } from "@/lib/api/assessments";
 import { useShellConfig } from "@/components/shell/ShellContext";
-import { Button, StatCard, Card } from "@/components/ds";
+import { Button, LucideIcon, StatCard, Card } from "@/components/ds";
 import AssessmentRow from "@/components/dashboard/AssessmentRow";
 import DashboardEmptyState from "@/components/dashboard/DashboardEmptyState";
 import type { AssessmentSummaryDto } from "@/types/assessment";
@@ -15,7 +15,7 @@ export default function DashboardPage() {
   useShellConfig({
     title: "Panel de control",
     subtitle: "Resumen de tus cursos y evaluaciones",
-    actions: <Button variant="primary">+ Nueva evaluación</Button>,
+    actions: <Button variant="primary" startIcon={<LucideIcon name="plus" size={16} />}>Nueva evaluación</Button>,
   });
 
   useEffect(() => {

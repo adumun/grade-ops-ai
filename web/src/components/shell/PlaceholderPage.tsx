@@ -64,7 +64,7 @@ export default function PlaceholderPage({ icon, title, description, badge, cta }
         </p>
 
         {cta && (
-          <Button variant="primary" onClick={cta.onClick} style={{ marginTop: 24 }}>
+          <Button variant="primary" onClick={cta.onClick} className="gops-button-space-top-lg">
             {cta.label}
           </Button>
         )}

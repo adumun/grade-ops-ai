@@ -21,7 +21,12 @@ export type LucideIconName =
   | "user"
   | "eye"
   | "eye-off"
-  | "search";
+  | "search"
+  | "plus"
+  | "save"
+  | "send"
+  | "upload"
+  | "arrow-left";
 
 interface LucideIconProps {
   name: LucideIconName;
@@ -56,6 +61,11 @@ const ICON_PATHS: Record<LucideIconName, string> = {
   "eye": `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`,
   "eye-off": `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>`,
   "search": `<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>`,
+  "plus": `<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>`,
+  "save": `<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>`,
+  "send": `<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>`,
+  "upload": `<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>`,
+  "arrow-left": `<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>`,
 };
 
 export default function LucideIcon({

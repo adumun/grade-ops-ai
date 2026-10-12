@@ -75,3 +75,6 @@ code, pre, kbd { font-family: var(--font-mono); }
   font-family: var(--font-mono);
   font-variant-ligatures: none;
 }
+
+.gops-button-space-top { margin-top: var(--space-4); }
+.gops-button-space-top-lg { margin-top: var(--space-6); }

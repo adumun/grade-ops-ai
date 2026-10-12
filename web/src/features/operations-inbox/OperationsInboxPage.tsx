@@ -47,7 +47,7 @@ function OperationRow({ operation, primaryHref, disabled, loading, error, onActi
         <div className={styles.rowMeta}><Badge tone={toneForStatus(operation.status)}>{operation.status}</Badge>{operation.access === "read-only" && <Badge tone="neutral">Solo lectura</Badge>}<span className={styles.dueDate}>{operation.dueDate}</span></div>
         {error && <div role="alert" className={styles.actionError}><LucideIcon name="alert-triangle" size={16} /><span>No se pudo completar esta acción.</span><Button size="sm" variant="outline" onClick={onRetry}>Reintentar</Button></div>}
       </div>
-      <div className={styles.rowActions}><RowActionGroup primaryLabel={blocked ? "Sin permiso" : operation.primaryDestination.label} primaryHref={primaryHref} primaryDisabled={blocked} loading={loading} onPrimary={onAction} contextDisabled={loading} onContext={onContext} /></div>
+      <div className={styles.rowActions}><RowActionGroup primaryLabel={blocked ? "Sin permiso" : operation.primaryDestination.label} primaryIcon={operation.primaryAction.toLowerCase().includes("revisar") ? <LucideIcon name="clipboard-check" size={16} /> : undefined} primaryHref={primaryHref} primaryDisabled={blocked} loading={loading} onPrimary={onAction} contextDisabled={loading} onContext={onContext} /></div>
     </article>
   );
 }
