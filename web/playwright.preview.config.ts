@@ -11,6 +11,11 @@ export default defineConfig({
   use: {
     baseURL: process.env.PREVIEW_BASE_URL ?? "http://127.0.0.1:3001",
     channel: "chrome",
+    // WSL2 local preview: the installed Chrome channel is the working browser
+    // strategy used by the existing E2E harnesses, but Crashpad cannot create
+    // its socket in this runner and terminates Chrome with SIGTRAP before launch.
+    // Keep this workaround scoped to the local preview harness only.
+    launchOptions: { args: ["--disable-crash-reporter"] },
     trace: "retain-on-failure",
   },
   projects: [

@@ -12,6 +12,7 @@ export interface NavigationItemConfig {
 
 export const NAVIGATION_CONFIG: readonly NavigationItemConfig[] = [
   { id: "home", label: "Inicio", icon: "layout-dashboard", href: "/preview", state: "available" },
+  { id: "assessments", label: "Evaluaciones", icon: "file-pen-line", href: "/preview/assessments", state: "available" },
   { id: "classes", label: "Mis clases", icon: "library", href: "/preview/classes", state: "pending" },
   { id: "operations", label: "Operaciones", icon: "clipboard-check", href: "/preview/operations", state: "available" },
   { id: "calendar", label: "Calendario", icon: "calendar-clock", href: "/preview/calendar", state: "pending" },

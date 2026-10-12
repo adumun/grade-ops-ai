@@ -1,0 +1,24 @@
+.emptyState,.formSection,.readiness { padding: clamp(24px,5vw,56px); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); background:var(--surface-card); box-shadow:var(--shadow-sm); }
+.emptyState { display:grid; justify-items:center; max-width:720px; margin:20px auto 0; text-align:center; }
+.emptyIcon { display:grid; place-items:center; width:64px; height:64px; color:var(--brand); border-radius:20px; background:var(--surface-brand-soft); }
+.kicker { color:var(--brand); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.emptyState h2,.sectionHeading h2 { margin:10px 0 8px; color:var(--text-strong); font:600 clamp(22px,3vw,30px)/1.15 var(--font-display); }
+.emptyState p { max-width:590px; margin:0; color:var(--text-muted); line-height:1.6; }
+.secondaryCopy { margin-top:10px !important; color:var(--text-body) !important; }
+.primaryLink { display:inline-flex; align-items:center; justify-content:center; min-height:40px; margin-top:24px; padding:0 16px; border-radius:var(--radius-md); color:#fff; background:var(--brand); font-size:var(--text-md); font-weight:500; text-decoration:none; }.primaryLink:hover { background:var(--brand-hover); }
+.secondaryLink,.backLink { color:var(--brand-hover); font-size:13px; text-decoration:underline; }.secondaryLink { align-self:center; }.backLink { margin-top:8px; }
+.localNote,.scopeNote { margin-top:20px !important; color:var(--text-subtle) !important; font-size:12px; }
+.progress { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin:18px 0 22px; color:var(--text-muted); font-size:13px; }
+.progress span { display:inline-flex; align-items:center; gap:7px; }
+.progress strong { display:grid; place-items:center; width:24px; height:24px; border-radius:50%; background:var(--surface-sunken); color:var(--text-muted); font-size:12px; }
+.progressStepActive { color:var(--brand-hover) !important; font-weight:600; }.progressStepActive strong { color:#fff; background:var(--brand); }
+.purposeLayout { display:grid; grid-template-columns:minmax(0,2fr) minmax(260px,1fr); gap:20px; align-items:start; }
+.sectionHeading { display:flex; justify-content:space-between; gap:16px; }.sectionHeading p { margin:0; color:var(--text-muted); }
+.formGrid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:26px; }.fullField { grid-column:1 / -1; }
+.formActions { display:flex; justify-content:flex-end; gap:10px; margin-top:24px; padding-top:20px; border-top:1px solid var(--border-subtle); }
+.readiness { padding:24px; }.readiness .sectionHeading h2 { font-size:20px; }.readiness .sectionHeading { align-items:flex-start; }.readiness p { color:var(--text-muted); font-size:13px; line-height:1.5; }
+.warningList { display:grid; gap:8px; margin:16px 0 0; padding-left:20px; color:var(--warning-700); font-size:13px; }.errorText { color:var(--danger-700) !important; }.successText { color:var(--success-700) !important; }
+.errorBanner,.successBanner { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:20px; padding:13px 14px; border-radius:var(--radius-md); font-size:13px; }.errorBanner { color:var(--danger-700); background:var(--danger-50); border:1px solid var(--danger-200); }.successBanner { color:var(--success-700); background:var(--success-50); border:1px solid var(--success-200); }.errorBanner span { color:var(--text-muted); }.errorBanner button { margin-left:auto; }
+.loadingState,.errorState,.permissionState { display:grid; justify-items:center; gap:12px; min-height:260px; padding:40px 20px; text-align:center; }.loadingState { color:var(--text-muted); }.errorState,.permissionState { border:1px solid var(--border-subtle); border-radius:var(--radius-lg); background:var(--surface-card); }.errorState h2,.permissionState h2 { margin:0; color:var(--text-strong); font:600 22px var(--font-display); }.errorState p,.permissionState p { max-width:500px; margin:0; color:var(--text-muted); line-height:1.5; }.permissionState { color:var(--text-muted); }.readonlyNotice { margin-bottom:16px; padding:12px 14px; color:var(--text-body); background:var(--surface-sunken); border-radius:var(--radius-md); font-size:13px; }
+@media (max-width:900px) { .purposeLayout { grid-template-columns:1fr; } }
+@media (max-width:640px) { .emptyState,.formSection,.readiness { padding:22px 18px; }.formGrid { grid-template-columns:1fr; }.fullField { grid-column:auto; }.formActions { display:grid; grid-template-columns:1fr; }.formActions button { width:100%; }.progress { gap:10px; }.progress span:nth-child(2),.progress span:nth-child(3) { display:none; } }

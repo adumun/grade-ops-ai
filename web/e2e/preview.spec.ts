@@ -37,6 +37,32 @@ test.describe("local-preview root and /preview", () => {
     await expect(page.getByRole("heading", { name: "Bandeja de Operaciones" })).toBeVisible();
   });
 
+  test("navigates to assessment authoring from Inicio and shared navigation", async ({ page }) => {
+    await page.goto("/preview");
+
+    const pageHeader = page.locator('[data-layout="page-header"]');
+    const shortcuts = page.locator('[aria-labelledby="shortcuts-title"]');
+    await expect(pageHeader.getByRole("link", { name: "Nueva evaluación" })).toHaveAttribute("href", "/preview/assessments/new/purpose");
+    await expect(shortcuts.getByRole("link", { name: "Nueva evaluación" })).toHaveAttribute("href", "/preview/assessments/new/purpose");
+
+    await shortcuts.getByRole("link", { name: "Nueva evaluación" }).click();
+    await expect(page).toHaveURL(/\/preview\/assessments\/new\/purpose$/);
+    await page.getByRole("link", { name: "Volver a Evaluaciones" }).click();
+    await expect(page).toHaveURL(/\/preview\/assessments$/);
+    await expect(page.getByRole("link", { name: "Crear mi primera evaluación" })).toHaveAttribute("href", "/preview/assessments/new/purpose");
+
+    const viewportWidth = await page.evaluate(() => window.innerWidth);
+    if (viewportWidth <= 640) {
+      await page.goto("/preview");
+      await page.getByRole("button", { name: "Abrir navegación" }).click();
+      await page.locator("#teacher-home-nav-mobile").getByRole("link", { name: "Evaluaciones" }).click();
+    } else {
+      await page.goto("/preview");
+      await page.locator("#teacher-home-nav").getByRole("link", { name: "Evaluaciones" }).click();
+    }
+    await expect(page).toHaveURL(/\/preview\/assessments$/);
+  });
+
   test("keeps window fixed while the preview main container scrolls", async ({ page }) => {
     await page.goto("/preview");
     const result = await page.locator("main").evaluate((main) => {
