@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import AssessmentEmptyState from "../AssessmentEmptyState";
 import AssessmentPurposeSection from "../AssessmentPurposeSection";
+import ContentSetSection from "../ContentSetSection";
+import MaterialList from "../MaterialList";
 
 describe("assessment authoring components", () => {
   it("offers the first-evaluation action from the true empty state", () => {
@@ -35,5 +37,20 @@ describe("assessment authoring components", () => {
     render(<AssessmentPurposeSection values={{ title: "Evaluación", topic: "Funciones", purpose: "Propósito" }} validation={{ errors: {}, warnings: [], isReady: true }} canEdit saveState="error" onChange={jest.fn()} onSave={jest.fn()} onRetry={onRetry} onCancel={jest.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the empty content set and material statuses with accessible actions", () => {
+    render(<MaterialList materials={[]} disabled={false} onRemove={jest.fn()} onMove={jest.fn()} />);
+    expect(screen.getByRole("status")).toHaveTextContent(/aún no agregas materiales/i);
+    render(<MaterialList materials={[{ id: "m1", name: "Taller.pptx", type: "pptx", status: "processing", sourceLabel: "Biblioteca demo", description: "Pendiente" }]} disabled={false} onRemove={jest.fn()} onMove={jest.fn()} />);
+    expect(screen.getByText("Procesando")).toBeInTheDocument();
+    expect(screen.getByText(/extracción demo todavía está pendiente/i)).toBeInTheDocument();
+  });
+
+  it("edits a content set and disables it while saving", () => {
+    const onChange = jest.fn();
+    render(<ContentSetSection values={{ name: "", description: "" }} validation={{ errors: { name: "Ingresa un nombre para el conjunto." }, isReady: false }} canEdit saveState="saving" onChange={onChange} onSave={jest.fn()} onRetry={jest.fn()} onCancel={jest.fn()} />);
+    expect(screen.getByRole("textbox", { name: /nombre del conjunto/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /guardar conjunto/i })).toBeDisabled();
   });
 });
