@@ -49,3 +49,46 @@ export type ContentSetDataState =
   | { status: "ready"; contentSet: ContentSet }
   | { status: "error"; message: string };
 export type ContentSetValidation = { errors: Partial<Record<keyof ContentSetValues, string>>; isReady: boolean };
+
+/** Local preview model; this is not a backend contract. */
+export type ObjectiveStatus = "draft" | "ready" | "needs_review";
+export type ObjectiveSource = "manual" | "demo-ai";
+export type ObjectiveAiDecision = "pending" | "accepted" | "edited" | "rejected";
+
+export type Objective = {
+  id: string;
+  title: string;
+  description: string;
+  observableEvidence: string;
+  materialIds: string[];
+  status: ObjectiveStatus;
+  source: ObjectiveSource;
+  aiDecision?: ObjectiveAiDecision;
+};
+
+export type ObjectiveSet = {
+  id: string;
+  assessmentDraftId: string;
+  objectives: Objective[];
+  updatedAt: string;
+};
+
+export type ObjectiveValues = Pick<Objective, "title" | "description" | "observableEvidence" | "materialIds">;
+export type ObjectiveValidation = {
+  errors: Partial<Record<Exclude<keyof ObjectiveValues, "materialIds">, string>>;
+  warnings: string[];
+  isReady: boolean;
+};
+export type ObjectiveCoverage = {
+  total: number;
+  ready: number;
+  withoutEvidence: number;
+  withoutMaterials: number;
+  coveredMaterialIds: string[];
+  contentCoveragePercent: number;
+  warnings: string[];
+};
+export type ObjectiveSetDataState =
+  | { status: "loading" }
+  | { status: "ready"; objectiveSet: ObjectiveSet }
+  | { status: "error"; message: string };

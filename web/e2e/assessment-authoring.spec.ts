@@ -55,10 +55,36 @@ test.describe("WEBUI-004 first assessment authoring unit", () => {
   });
 
   test("keeps future destinations contextual and has no horizontal overflow", async ({ page }) => {
-    const response = await page.goto("/preview/assessments/new/objectives");
+    const response = await page.goto("/preview/assessments/new/rubric");
     expect(response?.status()).toBe(200);
     await expect(page.getByTestId("not-found-page")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
+  });
+
+  test("reflects the route in the reusable authoring progress stepper", async ({ page }) => {
+    await page.goto("/preview/assessments/new/purpose");
+    const progress = page.getByRole("navigation", { name: "Progreso de autoría de la evaluación" });
+    await expect(progress.getByRole("link", { name: /1\. propósito — etapa actual/i })).toHaveAttribute("aria-current", "step");
+
+    await page.goto("/preview/assessments/new/content");
+    await expect(progress.getByLabel(/1\. propósito — completado/i)).toBeVisible();
+    await expect(progress.getByRole("link", { name: /2\. contenidos — etapa actual/i })).toHaveAttribute("aria-current", "step");
+
+    await page.goto("/preview/assessments/new/objectives");
+    await expect(progress.getByLabel(/1\. propósito — completado/i)).toBeVisible();
+    await expect(progress.getByLabel(/2\. contenidos — completado/i)).toBeVisible();
+    await expect(progress.getByRole("link", { name: /3\. objetivos — etapa actual/i })).toHaveAttribute("aria-current", "step");
+
+    await page.goto("/preview/assessments/new/rubric");
+    await expect(progress.getByLabel(/4\. rúbricas — etapa futura no disponible/i)).toBeVisible();
+    await expect(progress.locator('[data-progress-state="completed"]')).toHaveCount(0);
+
+    for (const width of [1440, 768, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/preview/assessments/new/content");
+      await expect(progress.getByRole("link", { name: /2\. contenidos — etapa actual/i })).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
+    }
   });
 
   test("creates, reorders, removes and recovers a local ContentSet", async ({ page }) => {
@@ -113,6 +139,77 @@ test.describe("WEBUI-004 first assessment authoring unit", () => {
     for (const width of [1440, 1024, 768, 430, 390]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/preview/assessments");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
+    }
+  });
+
+  test("reaches objectives from ContentSet, creates, edits, deletes and covers a linked material", async ({ page }) => {
+    await page.goto("/preview/assessments/new/content");
+    await page.getByRole("textbox", { name: /nombre del conjunto/i }).fill("Materiales de funciones");
+    await page.getByRole("button", { name: /agregar material/i }).click();
+    await page.getByRole("button", { name: /guardar conjunto/i }).click();
+    await page.getByRole("link", { name: /continuar a objetivos/i }).click();
+    await expect(page).toHaveURL(/\/preview\/assessments\/new\/objectives$/);
+    await expect(page.getByRole("heading", { name: /objetivos medibles/i })).toBeVisible();
+    await page.getByRole("textbox", { name: "Objetivo medible" }).fill("Aplicar funciones para resolver problemas");
+    await page.getByRole("textbox", { name: "Evidencia observable" }).fill("Implementa dos funciones y explica su responsabilidad.");
+    await page.getByRole("checkbox", { name: /funciones y modularidad/i }).check();
+    await page.getByRole("button", { name: "Agregar objetivo" }).click();
+    const objectives = page.getByRole("list", { name: "Objetivos de la evaluación" });
+    await expect(objectives).toContainText("Aplicar funciones para resolver problemas");
+    await expect(page.getByLabel("100% de cobertura del ContentSet")).toBeVisible();
+    await page.getByRole("button", { name: /editar aplicar funciones para resolver problemas/i }).click();
+    await page.getByRole("textbox", { name: "Objetivo medible" }).fill("Aplicar funciones reutilizables");
+    await page.getByRole("button", { name: "Guardar objetivo", exact: true }).click();
+    await expect(objectives).toContainText("Aplicar funciones reutilizables");
+    await page.getByRole("button", { name: /eliminar aplicar funciones reutilizables/i }).click();
+    await expect(objectives).not.toContainText("Aplicar funciones reutilizables");
+    await page.getByRole("button", { name: "Guardar objetivos" }).click();
+    await expect(page.getByRole("status").filter({ hasText: /objetivos guardados localmente/i })).toBeVisible();
+    await page.getByRole("link", { name: "Volver al ContentSet" }).click();
+    await expect(page).toHaveURL(/\/preview\/assessments\/new\/content$/);
+  });
+
+  test("keeps the AI proposal under a human decision and exposes all objective states", async ({ page }) => {
+    await page.goto("/preview/assessments/new/objectives");
+    await expect(page.getByText("Propuesta pendiente")).toBeVisible();
+    await expect(page.getByText(/acción humana pendiente/i)).toBeVisible();
+    await page.getByRole("button", { name: "Aceptar propuesta" }).click();
+    await expect(page.getByText("Propuesta aceptada")).toBeVisible();
+    await page.reload();
+    await page.getByRole("button", { name: "Editar propuesta" }).click();
+    await page.getByRole("textbox", { name: "Objetivo medible" }).fill("Descomponer problemas mediante funciones");
+    await page.getByRole("button", { name: "Guardar objetivo", exact: true }).click();
+    await expect(page.getByText("Propuesta editada")).toBeVisible();
+    await page.reload();
+    await page.getByRole("button", { name: "Rechazar propuesta" }).click();
+    await expect(page.getByText("Propuesta rechazada")).toBeVisible();
+  });
+
+  test("shows objective loading, empty, retry, access states and the contextual rubric 404", async ({ page }) => {
+    await page.goto("/preview/assessments/new/objectives");
+    await page.getByRole("combobox", { name: "Estado de demo" }).selectOption("loading");
+    await expect(page.getByLabel("Cargando objetivos")).toBeVisible();
+    await page.goto("/preview/assessments/new/objectives");
+    await page.getByRole("combobox", { name: "Estado de demo" }).selectOption("empty");
+    await expect(page.getByRole("status").filter({ hasText: /aún no hay objetivos/i })).toBeVisible();
+    await page.goto("/preview/assessments/new/objectives?access=read-only");
+    await expect(page.getByRole("status").filter({ hasText: /solo lectura/i })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Objetivo medible" })).toBeDisabled();
+    await page.goto("/preview/assessments/new/objectives?access=permission-denied");
+    await expect(page.getByRole("alert").filter({ hasText: /no tienes permisos/i })).toBeVisible();
+    await page.goto("/preview/assessments/new/objectives?saveError=1");
+    await page.getByRole("button", { name: "Guardar objetivos" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: /no se pudo guardar/i })).toBeVisible();
+    await page.getByRole("button", { name: "Reintentar" }).click();
+    await expect(page.getByRole("status").filter({ hasText: /objetivos guardados localmente/i })).toBeVisible();
+    await page.getByRole("link", { name: /ver estado de rúbricas/i }).click();
+    await expect(page).toHaveURL(/\/preview\/assessments\/new\/rubric$/);
+    await expect(page.getByTestId("not-found-page")).toBeVisible();
+    await expect(page.getByTestId("area-label")).toContainText("Rúbricas");
+    for (const width of [1440, 1024, 768, 430, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/preview/assessments/new/objectives");
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
     }
   });

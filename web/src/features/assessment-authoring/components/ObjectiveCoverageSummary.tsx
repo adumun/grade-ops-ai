@@ -1,0 +1,7 @@
+import Badge from "@/components/ds/Badge";
+import type { ObjectiveCoverage } from "../domain/types";
+import styles from "./Objectives.module.css";
+
+export default function ObjectiveCoverageSummary({ coverage }: { coverage: ObjectiveCoverage }) {
+  return <aside className={styles.coverage} aria-labelledby="objective-coverage-title"><div className={styles.sectionHeading}><div><span className={styles.kicker}>Cobertura preliminar</span><h2 id="objective-coverage-title">Resumen de objetivos</h2></div><Badge tone={coverage.warnings.length ? "warning" : "success"}>{coverage.warnings.length ? "Revisar" : "Listo"}</Badge></div><dl className={styles.metrics}><div><dt>Total</dt><dd>{coverage.total}</dd></div><div><dt>Listos</dt><dd>{coverage.ready}</dd></div><div><dt>Sin evidencia</dt><dd>{coverage.withoutEvidence}</dd></div><div><dt>Sin material</dt><dd>{coverage.withoutMaterials}</dd></div></dl><div className={styles.coverageBar}><span>Contenido cubierto</span><strong>{coverage.contentCoveragePercent}%</strong><div aria-label={`${coverage.contentCoveragePercent}% de cobertura del ContentSet`}><meter min="0" max="100" value={coverage.contentCoveragePercent}>{coverage.contentCoveragePercent}%</meter></div></div>{coverage.warnings.length > 0 && <ul className={styles.coverageWarnings}>{coverage.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}<p className={styles.coverageHint}>Las advertencias no impiden guardar, pero aclaran qué falta antes de avanzar.</p></aside>;
+}
