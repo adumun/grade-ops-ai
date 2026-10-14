@@ -18,18 +18,17 @@ export const assessmentAuthoringSteps: readonly AssessmentProgressStep[] = [
   { stage: "rubric", label: "Rúbricas", href: "/preview/assessments/new/rubric" },
 ];
 
-const stageOrder: Record<Exclude<AssessmentAuthoringStage, "rubric">, number> = {
+const stageOrder: Record<AssessmentAuthoringStage, number> = {
   purpose: 0,
   content: 1,
   objectives: 2,
+  rubric: 3,
 };
 
 export function getAssessmentProgressState(
   stage: AssessmentAuthoringStage,
   step: AssessmentAuthoringStage,
 ): AssessmentProgressState {
-  if (stage === "rubric") return step === "rubric" ? "blocked" : "pending";
-  if (step === "rubric") return "blocked";
   if (step === stage) return "active";
   return stageOrder[step] < stageOrder[stage] ? "completed" : "pending";
 }
@@ -39,8 +38,6 @@ interface AssessmentProgressProps {
 }
 
 export default function AssessmentProgress({ currentStage }: AssessmentProgressProps) {
-  const isFutureRoute = currentStage === "rubric";
-
   return (
     <nav className={styles.progress} aria-label="Progreso de autoría de la evaluación">
       <ol className={styles.progressSteps}>
@@ -52,12 +49,12 @@ export default function AssessmentProgress({ currentStage }: AssessmentProgressP
 
           return (
             <li key={step.stage} className={`${styles.progressStep} ${styles[`progressStep${state[0].toUpperCase()}${state.slice(1)}`]}`} data-progress-state={state}>
-              {state === "blocked" ? <span aria-label={stepLabel}>{content}</span> : <Link href={step.href} aria-current={state === "active" ? "step" : undefined} aria-label={stepLabel}>{content}</Link>}
+              <Link href={step.href} aria-current={state === "active" ? "step" : undefined} aria-label={stepLabel}>{content}</Link>
             </li>
           );
         })}
       </ol>
-      <Badge tone={isFutureRoute ? "warning" : "neutral"}>{isFutureRoute ? "Etapa futura" : "Borrador local"}</Badge>
+      <Badge tone="neutral">Borrador local</Badge>
     </nav>
   );
 }

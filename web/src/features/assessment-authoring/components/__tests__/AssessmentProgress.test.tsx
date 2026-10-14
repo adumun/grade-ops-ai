@@ -24,18 +24,17 @@ describe("AssessmentProgress", () => {
     expect(screen.getByRole("link", { name: /3\. objetivos — etapa actual/i })).toHaveAttribute("aria-current", "step");
   });
 
-  it("keeps the unavailable rubric route blocked without inferring completed work", () => {
+  it("completes previous stages and activates the available rubric", () => {
     render(<AssessmentProgress currentStage="rubric" />);
 
-    expect(screen.queryByLabelText(/etapa actual/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/4\. rúbricas — etapa futura no disponible/i).closest("li")).toHaveAttribute("data-progress-state", "blocked");
-    expect(document.querySelectorAll('[data-progress-state="completed"]')).toHaveLength(0);
+    expect(screen.getByRole("link", { name: /4\. rúbricas — etapa actual/i })).toHaveAttribute("aria-current", "step");
+    expect(document.querySelectorAll('[data-progress-state="completed"]')).toHaveLength(3);
   });
 
   it("exposes deterministic state rules independently from rendering", () => {
     expect(getAssessmentProgressState("content", "purpose")).toBe("completed");
     expect(getAssessmentProgressState("content", "content")).toBe("active");
-    expect(getAssessmentProgressState("objectives", "rubric")).toBe("blocked");
-    expect(getAssessmentProgressState("rubric", "objectives")).toBe("pending");
+    expect(getAssessmentProgressState("objectives", "rubric")).toBe("pending");
+    expect(getAssessmentProgressState("rubric", "objectives")).toBe("completed");
   });
 });

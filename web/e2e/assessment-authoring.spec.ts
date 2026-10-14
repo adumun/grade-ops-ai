@@ -54,37 +54,42 @@ test.describe("WEBUI-004 first assessment authoring unit", () => {
     await expect(page.getByRole("textbox", { name: "Temática" })).toHaveValue("Funciones y modularidad");
   });
 
-  test("keeps future destinations contextual and has no horizontal overflow", async ({ page }) => {
+  test("opens the local rubric and keeps future Questions contextual", async ({ page }) => {
     const response = await page.goto("/preview/assessments/new/rubric");
     expect(response?.status()).toBe(200);
+    await expect(page.getByRole("heading", { name: /rúbrica reutilizable/i })).toBeVisible();
+    await page.getByRole("link", { name: /continuar a preguntas/i }).click();
     await expect(page.getByTestId("not-found-page")).toBeVisible();
+    await expect(page.getByTestId("area-label")).toContainText("Preguntas");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
   });
 
   test("reflects the route in the reusable authoring progress stepper", async ({ page }) => {
     await page.goto("/preview/assessments/new/purpose");
+    await expect(page.locator('[data-layout="authoring-stage"]')).toBeVisible();
+    await expect(page.locator('[data-layout="authoring-stage-footer"]')).toBeVisible();
     const progress = page.getByRole("navigation", { name: "Progreso de autoría de la evaluación" });
     await expect(progress.getByRole("link", { name: /1\. propósito — etapa actual/i })).toHaveAttribute("aria-current", "step");
 
     await page.goto("/preview/assessments/new/content");
+    await expect(page.locator('[data-layout="authoring-stage"]')).toBeVisible();
+    await expect(page.locator('[data-layout="authoring-stage-footer"]')).toBeVisible();
     await expect(progress.getByLabel(/1\. propósito — completado/i)).toBeVisible();
     await expect(progress.getByRole("link", { name: /2\. contenidos — etapa actual/i })).toHaveAttribute("aria-current", "step");
 
     await page.goto("/preview/assessments/new/objectives");
+    await expect(page.locator('[data-layout="authoring-stage"]')).toBeVisible();
+    await expect(page.locator('[data-layout="authoring-stage-footer"]')).toBeVisible();
     await expect(progress.getByLabel(/1\. propósito — completado/i)).toBeVisible();
     await expect(progress.getByLabel(/2\. contenidos — completado/i)).toBeVisible();
     await expect(progress.getByRole("link", { name: /3\. objetivos — etapa actual/i })).toHaveAttribute("aria-current", "step");
 
     await page.goto("/preview/assessments/new/rubric");
-    await expect(progress.getByLabel(/4\. rúbricas — etapa futura no disponible/i)).toBeVisible();
-    await expect(progress.locator('[data-progress-state="completed"]')).toHaveCount(0);
+    await expect(page.locator('[data-layout="authoring-stage"]')).toBeVisible();
+    await expect(page.locator('[data-layout="authoring-stage-footer"]')).toBeVisible();
+    await expect(progress.getByRole("link", { name: /4\. rúbricas — etapa actual/i })).toHaveAttribute("aria-current", "step");
+    await expect(progress.locator('[data-progress-state="completed"]')).toHaveCount(3);
 
-    for (const width of [1440, 768, 390]) {
-      await page.setViewportSize({ width, height: 900 });
-      await page.goto("/preview/assessments/new/content");
-      await expect(progress.getByRole("link", { name: /2\. contenidos — etapa actual/i })).toBeVisible();
-      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
-    }
   });
 
   test("creates, reorders, removes and recovers a local ContentSet", async ({ page }) => {
@@ -186,7 +191,7 @@ test.describe("WEBUI-004 first assessment authoring unit", () => {
     await expect(page.getByText("Propuesta rechazada")).toBeVisible();
   });
 
-  test("shows objective loading, empty, retry, access states and the contextual rubric 404", async ({ page }) => {
+  test("shows objective loading, empty, retry, access states and reaches the rubric", async ({ page }) => {
     await page.goto("/preview/assessments/new/objectives");
     await page.getByRole("combobox", { name: "Estado de demo" }).selectOption("loading");
     await expect(page.getByLabel("Cargando objetivos")).toBeVisible();
@@ -203,13 +208,55 @@ test.describe("WEBUI-004 first assessment authoring unit", () => {
     await expect(page.getByRole("alert").filter({ hasText: /no se pudo guardar/i })).toBeVisible();
     await page.getByRole("button", { name: "Reintentar" }).click();
     await expect(page.getByRole("status").filter({ hasText: /objetivos guardados localmente/i })).toBeVisible();
-    await page.getByRole("link", { name: /ver estado de rúbricas/i }).click();
+    await page.getByRole("link", { name: /continuar a rúbrica/i }).click();
     await expect(page).toHaveURL(/\/preview\/assessments\/new\/rubric$/);
-    await expect(page.getByTestId("not-found-page")).toBeVisible();
-    await expect(page.getByTestId("area-label")).toContainText("Rúbricas");
+    await expect(page.getByRole("heading", { name: /rúbrica reutilizable/i })).toBeVisible();
     for (const width of [1440, 1024, 768, 430, 390]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/preview/assessments/new/objectives");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
+    }
+  });
+
+  test("authors a reusable rubric with criteria, levels, coverage, decisions and local versioning", async ({ page }) => {
+    await page.goto("/preview/assessments/new/rubric");
+    await page.getByRole("button", { name: "Agregar criterio" }).click();
+    await page.getByRole("textbox", { name: "Nombre del criterio" }).fill("Implementación");
+    await page.getByRole("textbox", { name: "Descriptor" }).fill("Entrega una solución modular y comprobable.");
+    await page.getByRole("spinbutton", { name: "Peso (%)" }).fill("80");
+    await expect(page.getByText(/la suma de pesos debe llegar a 100/i)).toBeVisible();
+    await page.getByRole("checkbox", { name: /descomponer un problema/i }).check();
+    await page.getByRole("button", { name: "Agregar nivel" }).click();
+    await expect(page.getByRole("textbox", { name: "Descriptor" })).toHaveCount(2);
+    await page.getByRole("button", { name: "Guardar rúbrica" }).click();
+    await expect(page.getByRole("status").filter({ hasText: /rúbrica guardada localmente/i })).toBeVisible();
+    await page.getByRole("combobox", { name: "Rúbrica demo" }).selectOption("rubric-demo-ai-pending");
+    await expect(page.getByText(/propuesta ia pendiente/i)).toBeVisible();
+    await page.getByRole("button", { name: "Aceptar propuesta" }).click();
+    await expect(page.getByText(/propuesta aceptada/i)).toBeVisible();
+    await page.reload();
+    await page.getByRole("combobox", { name: "Rúbrica demo" }).selectOption("rubric-demo-ai-pending");
+    await page.getByRole("button", { name: "Editar propuesta" }).click();
+    await expect(page.getByText(/propuesta editada/i)).toBeVisible();
+    await page.getByRole("button", { name: "Duplicar versión" }).click();
+    await expect(page.getByText(/propuesta ia demo: funciones \(copia\)/i)).toBeVisible();
+    await page.getByRole("link", { name: "Volver a Objetivos" }).last().click();
+    await expect(page).toHaveURL(/\/preview\/assessments\/new\/objectives$/);
+  });
+
+  test("supports rubric loading, retry, read-only and responsive layouts", async ({ page }) => {
+    await page.goto("/preview/assessments/new/rubric?loadError=1");
+    await expect(page.getByRole("alert").filter({ hasText: /no pudimos cargar/i })).toBeVisible();
+    await page.getByRole("button", { name: "Reintentar" }).click();
+    await expect(page.getByRole("heading", { name: /rúbrica reutilizable/i })).toBeVisible();
+    await page.goto("/preview/assessments/new/rubric?access=read-only");
+    await expect(page.getByRole("status").filter({ hasText: /solo lectura/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Agregar criterio" })).toBeDisabled();
+    await page.goto("/preview/assessments/new/rubric?access=permission-denied");
+    await expect(page.getByRole("alert").filter({ hasText: /no tienes permisos/i })).toBeVisible();
+    for (const width of [1440, 1024, 768, 430, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/preview/assessments/new/rubric");
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
     }
   });

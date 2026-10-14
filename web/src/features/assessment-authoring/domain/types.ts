@@ -92,3 +92,53 @@ export type ObjectiveSetDataState =
   | { status: "loading" }
   | { status: "ready"; objectiveSet: ObjectiveSet }
   | { status: "error"; message: string };
+
+/** Local-preview rubric model. It deliberately is not an API contract. */
+export type RubricAiDecision = "pending" | "accepted" | "edited" | "rejected";
+
+export type RubricLevel = {
+  id: string;
+  label: string;
+  descriptor: string;
+  score: number;
+};
+
+export type RubricCriterion = {
+  id: string;
+  title: string;
+  description: string;
+  weight: number;
+  objectiveIds: string[];
+  levels: RubricLevel[];
+};
+
+export type RubricVersion = {
+  id: string;
+  title: string;
+  version: number;
+  criteria: RubricCriterion[];
+  aiDecision?: RubricAiDecision;
+  updatedAt: string;
+  isDemo?: boolean;
+};
+
+export type RubricDataState =
+  | { status: "loading" }
+  | { status: "ready"; rubric: RubricVersion; availableRubrics: RubricVersion[] }
+  | { status: "error"; message: string };
+
+export type RubricCriterionValidation = {
+  errors: string[];
+  warnings: string[];
+  isValid: boolean;
+};
+
+export type RubricReadiness = {
+  isReady: boolean;
+  weightTotal: number;
+  weightState: "incomplete" | "correct" | "exceeded";
+  objectivesWithoutCriterion: string[];
+  duplicateCriteria: string[];
+  warnings: string[];
+  blockers: string[];
+};

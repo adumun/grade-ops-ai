@@ -1,0 +1,19 @@
+import Button from "@/components/ds/Button";
+import Field from "@/components/ds/Field";
+import Input from "@/components/ds/Input";
+import Textarea from "@/components/ds/Textarea";
+import type { Objective, RubricCriterion as RubricCriterionType } from "../domain/types";
+import { validateCriterion } from "../domain/rubricRules";
+import RubricLevel from "./RubricLevel";
+import styles from "./Rubric.module.css";
+
+export default function RubricCriterion({ criterion, objectives, disabled, first, last, onChange, onToggleObjective, onAddLevel, onUpdateLevel, onRemoveLevel, onMove, onRemove }: { criterion: RubricCriterionType; objectives: Objective[]; disabled: boolean; first: boolean; last: boolean; onChange: (field: "title" | "description" | "weight", value: string | number) => void; onToggleObjective: (id: string) => void; onAddLevel: () => void; onUpdateLevel: (levelId: string, field: "label" | "descriptor" | "score", value: string | number) => void; onRemoveLevel: (levelId: string) => void; onMove: (direction: -1 | 1) => void; onRemove: () => void }) {
+  const validation = validateCriterion(criterion);
+  return <article className={styles.criterion} aria-labelledby={`criterion-title-${criterion.id}`}>
+    <div className={styles.criterionHeader}><div><span className={styles.kicker}>Criterio local</span><h3 id={`criterion-title-${criterion.id}`}>{criterion.title || "Criterio sin nombre"}</h3></div><div className={styles.criterionActions}><Button size="sm" variant="ghost" disabled={disabled || first} onClick={() => onMove(-1)}>Subir</Button><Button size="sm" variant="ghost" disabled={disabled || last} onClick={() => onMove(1)}>Bajar</Button><Button size="sm" variant="ghost" disabled={disabled} onClick={onRemove}>Eliminar criterio</Button></div></div>
+    <div className={styles.criterionGrid}><Field htmlFor={`criterion-name-${criterion.id}`} label="Nombre del criterio" required><Input id={`criterion-name-${criterion.id}`} value={criterion.title} disabled={disabled} onChange={(event) => onChange("title", event.target.value)} /></Field><Field htmlFor={`criterion-weight-${criterion.id}`} label="Peso (%)" required><Input id={`criterion-weight-${criterion.id}`} type="number" min="0" value={criterion.weight} disabled={disabled} onChange={(event) => onChange("weight", Number(event.target.value))} /></Field><div className={styles.fullField}><Field htmlFor={`criterion-description-${criterion.id}`} label="Descripción"><Textarea id={`criterion-description-${criterion.id}`} value={criterion.description} disabled={disabled} onChange={(event) => onChange("description", event.target.value)} /></Field></div></div>
+    <fieldset className={styles.objectivePicker} disabled={disabled}><legend>Objetivos vinculados</legend>{objectives.length ? objectives.map((objective) => <label key={objective.id}><input type="checkbox" checked={criterion.objectiveIds.includes(objective.id)} onChange={() => onToggleObjective(objective.id)} />{objective.title}</label>) : <p>No hay objetivos locales disponibles. Vuelve a Objetivos para agregarlos.</p>}</fieldset>
+    <section className={styles.levels} aria-labelledby={`levels-${criterion.id}`}><div className={styles.levelsHeader}><h4 id={`levels-${criterion.id}`}>Niveles de logro</h4><Button size="sm" variant="secondary" disabled={disabled} onClick={onAddLevel}>Agregar nivel</Button></div><ol>{criterion.levels.map((level) => <RubricLevel key={level.id} level={level} disabled={disabled} onChange={(field, value) => onUpdateLevel(level.id, field, value)} onRemove={() => onRemoveLevel(level.id)} />)}</ol></section>
+    {[...validation.errors, ...validation.warnings].length > 0 && <ul className={styles.criterionIssues} aria-label={`Advertencias de ${criterion.title || "criterio"}`}>{[...validation.errors, ...validation.warnings].map((issue) => <li key={issue}>{issue}</li>)}</ul>}
+  </article>;
+}

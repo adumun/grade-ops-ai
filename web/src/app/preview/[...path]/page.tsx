@@ -12,6 +12,7 @@ const ROUTE_LABEL_ALIASES: Record<string, string> = {
 };
 
 function getAreaLabel(requestedPath: string) {
+  if (requestedPath === "/preview/assessments/new/questions") return "Preguntas";
   const navigationItem = NAVIGATION_CONFIG.find((item) => item.href === "/preview" ? requestedPath === item.href : requestedPath === item.href || requestedPath.startsWith(`${item.href}/`));
   if (navigationItem) return navigationItem.label;
 
