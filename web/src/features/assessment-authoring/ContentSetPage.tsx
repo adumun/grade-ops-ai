@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import AppShell from "@/components/shell/AppShell";
 import Badge from "@/components/ds/Badge";
 import Button from "@/components/ds/Button";
@@ -11,6 +12,7 @@ import PageHeader from "@/components/shell/PageHeader";
 import PageNotFound from "@/components/shell/PageNotFound";
 import { useDemoState, useShellConfig } from "@/components/shell/ShellContext";
 import ContentSetSection from "./components/ContentSetSection";
+import ContentSetCreateDialog from "./components/ContentSetCreateDialog";
 import ContentSetLibrary from "./components/ContentSetLibrary";
 import MaterialList from "./components/MaterialList";
 import MaterialUploader from "./components/MaterialUploader";
@@ -25,6 +27,7 @@ export default function ContentSetPage({ access = "editable", simulateSaveError 
   const { demoState } = useDemoState();
   const router = useRouter();
   const view = useContentSetPage(access, simulateSaveError);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const isReadOnly = access === "read-only" || demoState === "readonly";
   const canEdit = view.draft.canEdit && !isReadOnly;
 
@@ -46,8 +49,17 @@ export default function ContentSetPage({ access = "editable", simulateSaveError 
     footer={<><div className={featureStyles.footerBack}><Button variant="outline" type="button" disabled={view.draft.saveState === "saving"} onClick={() => router.push("/preview/assessments/new/purpose")} startIcon={<LucideIcon name="arrow-left" size={16} />}>Volver al propósito</Button></div><div className={featureStyles.footerActions}><Button type="button" loading={view.draft.saveState === "saving"} disabled={!canEdit} onClick={() => { void view.draft.save(); }} startIcon={<LucideIcon name="save" size={16} />}>{view.draft.saveState === "saved" ? "Guardar cambios" : "Guardar asociación"}</Button><Button type="button" variant="secondary" disabled={!canEdit || view.draft.saveState === "saving"} onClick={continueToObjectives} endIcon={<LucideIcon name="arrow-right" size={16} />}>Continuar a objetivos</Button></div></>}
   >
     <div className={styles.contentLayout}>
-      <ContentSetLibrary contentSets={view.draft.reusableContentSets} selectedId={view.draft.mode === "existing" ? view.draft.draft?.id : undefined} mode={view.draft.mode} canEdit={canEdit} onSelect={view.draft.selectContentSet} onCreate={view.draft.startNewContentSet} />
+      <ContentSetLibrary contentSets={view.draft.reusableContentSets} selectedId={view.draft.mode === "existing" ? view.draft.draft?.id : undefined} mode={view.draft.mode} canEdit={canEdit} onSelect={view.draft.selectContentSet} onCreate={() => setCreateDialogOpen(true)} />
       <ContentSetSection values={view.draft.values} validation={view.draft.validation} validationRequested={view.draft.validationRequested} mode={view.draft.mode} canEdit={canEdit} saveState={view.draft.saveState} onChange={view.draft.update} onSave={() => { void view.draft.save(); }} onRetry={() => { void view.draft.save(); }} onCancel={() => router.push("/preview/assessments/new/purpose")} showActions={false} />
+      <ContentSetCreateDialog
+        open={createDialogOpen}
+        canEdit={canEdit}
+        onClose={() => setCreateDialogOpen(false)}
+        onCreate={(values) => {
+          view.draft.createNewContentSet(values);
+          setCreateDialogOpen(false);
+        }}
+      />
       <MaterialUploader fixtures={view.draft.fixtures} disabled={!canEdit || view.draft.saveState === "saving"} onAdd={view.draft.addMaterial} />
       <section className={styles.materialsSection} aria-labelledby="materials-title">
         <div className={styles.materialsHeader}><div><h2 id="materials-title">Materiales asociados</h2><p>{view.draft.materials.length === 0 ? "Todavía no hay materiales asociados." : `${view.draft.materials.length} material${view.draft.materials.length === 1 ? "" : "es"} asociados.`}</p></div><Badge tone="neutral">{view.draft.mode === "existing" ? "Reutilizable · asociado" : "Nuevo · borrador"}</Badge></div>
