@@ -85,7 +85,12 @@ export function useContentSetDraft(
       return false;
     }
     try {
-      const next = await localContentSetDataSource.saveContentSet(values, materials, draft?.name ? draft.id : undefined);
+      if (mode === "existing" && draft?.id) {
+        await localContentSetDataSource.saveAssociation(draft.id);
+        setSaveState("saved");
+        return true;
+      }
+      const next = await localContentSetDataSource.saveContentSet(values, materials);
       await localContentSetDataSource.saveAssociation(next.id);
       setDraft(next);
       setValues({ name: next.name, description: next.description });
