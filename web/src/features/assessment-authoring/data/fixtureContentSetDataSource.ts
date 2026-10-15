@@ -2,6 +2,7 @@ import type { ContentSet, Material } from "../domain/types";
 
 export const CONTENT_SET_ID = "content-set-local-001";
 export const CONTENT_SET_STORAGE_KEY = "gradeops.local-preview.content-set";
+export const CONTENT_SET_ASSOCIATION_STORAGE_KEY = "gradeops.local-preview.assessment-content-set";
 export const CONTENT_SET_UPDATED_AT = "2026-10-12T00:00:00.000Z";
 
 export const DEMO_MATERIALS: Material[] = [
