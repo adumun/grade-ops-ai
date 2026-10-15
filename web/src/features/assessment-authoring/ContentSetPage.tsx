@@ -30,6 +30,7 @@ export default function ContentSetPage({ access = "editable", simulateSaveError 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const isReadOnly = access === "read-only" || demoState === "readonly";
   const canEdit = view.draft.canEdit && !isReadOnly;
+  const canEditMaterials = canEdit && view.draft.mode === "new";
 
   if (view.dataState.status === "loading") return <AppShell><Page><PageHeader eyebrow="Nueva evaluación · Vista previa local" title="Contenidos de la evaluación" description="Cargando la biblioteca local…" /><div className={featureStyles.loadingState} aria-busy="true" aria-label="Cargando contenidos"><LucideIcon name="sparkles" size={28} /><p>Cargando…</p></div></Page></AppShell>;
   if (view.dataState.status === "error") return <AppShell><Page><PageHeader eyebrow="Nueva evaluación · Vista previa local" title="Contenidos de la evaluación" description="No se pudo cargar la biblioteca local." /><div className={featureStyles.errorState} role="alert"><LucideIcon name="alert-triangle" size={28} color="var(--danger-600)" /><h2>No pudimos cargar tus contenidos</h2><p>{view.dataState.message}</p><Button onClick={view.retryLoad}>Reintentar</Button></div></Page></AppShell>;
@@ -60,10 +61,10 @@ export default function ContentSetPage({ access = "editable", simulateSaveError 
           setCreateDialogOpen(false);
         }}
       />
-      <MaterialUploader fixtures={view.draft.fixtures} disabled={!canEdit || view.draft.saveState === "saving"} onAdd={view.draft.addMaterial} />
+      <MaterialUploader fixtures={view.draft.fixtures} disabled={!canEditMaterials || view.draft.saveState === "saving"} onAdd={view.draft.addMaterial} />
       <section className={styles.materialsSection} aria-labelledby="materials-title">
         <div className={styles.materialsHeader}><div><h2 id="materials-title">Materiales asociados</h2><p>{view.draft.materials.length === 0 ? "Todavía no hay materiales asociados." : `${view.draft.materials.length} material${view.draft.materials.length === 1 ? "" : "es"} asociados.`}</p></div><Badge tone="neutral">{view.draft.mode === "existing" ? "Reutilizable · asociado" : "Nuevo · borrador"}</Badge></div>
-        <MaterialList materials={view.draft.materials} disabled={!canEdit || view.draft.saveState === "saving"} onRemove={view.draft.removeMaterial} onMove={view.draft.reorderMaterial} />
+        <MaterialList materials={view.draft.materials} disabled={!canEditMaterials || view.draft.saveState === "saving"} onRemove={view.draft.removeMaterial} onMove={view.draft.reorderMaterial} />
         <p className={styles.continueHint}>La evaluación usará esta asociación en la etapa de objetivos; los materiales siguen perteneciendo al conjunto reutilizable.</p>
       </section>
     </div>
