@@ -47,6 +47,9 @@ export default function IconButton({
       aria-label={label}
       aria-pressed={pressed}
       aria-busy={loading || undefined}
+      data-variant={variant}
+      data-size={size}
+      data-shape={shape}
       disabled={isDisabled}
       style={iconSize ? { "--icon-button-icon-size": `${iconSize}px` } as React.CSSProperties : undefined}
       {...props}
