@@ -25,12 +25,12 @@ export function useContentSetDraft(
   const hasFailedOnce = useRef(false);
 
   useEffect(() => {
-    if (!initial || draft?.id === initial.id) return;
+    if (!initial) return;
     setDraft(initial);
     setValues({ name: initial.name, description: initial.description });
     setMaterials(initial.materials);
     setMode(initial.name ? "existing" : "new");
-  }, [draft?.id, initial]);
+  }, [initial]);
 
   const validation = validateContentSet(values);
   const update = (field: keyof ContentSetValues, value: string) => {
