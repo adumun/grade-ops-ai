@@ -1,4 +1,4 @@
-import type { Material } from "../domain/types";
+import type { ContentSet, Material } from "../domain/types";
 
 export const CONTENT_SET_ID = "content-set-local-001";
 export const CONTENT_SET_STORAGE_KEY = "gradeops.local-preview.content-set";
@@ -10,4 +10,23 @@ export const DEMO_MATERIALS: Material[] = [
   { id: "material-link-reference", name: "Referencia MDN · funciones", type: "link", status: "error", sourceLabel: "Enlace demo", description: "No se pudo revisar el contenido del enlace simulado." },
   { id: "material-image-diagram", name: "Diagrama de flujo.png", type: "image", status: "unsupported", sourceLabel: "Biblioteca demo", description: "Este formato requiere extracción futura." },
   { id: "material-text-note", name: "Nota del docente", type: "text", status: "ready", sourceLabel: "Texto local", description: "Una nota breve reutilizable para contextualizar la actividad." },
+];
+
+export const DEMO_CONTENT_SETS: ContentSet[] = [
+  {
+    id: "content-set-functions",
+    name: "Funciones y modularidad",
+    description: "Conceptos y ejemplos para trabajar funciones reutilizables.",
+    materials: [DEMO_MATERIALS[0], DEMO_MATERIALS[2]],
+    status: "draft",
+    updatedAt: CONTENT_SET_UPDATED_AT,
+  },
+  {
+    id: "content-set-algorithms",
+    name: "Introducción a algoritmos",
+    description: "Material base para representar problemas y diseñar soluciones.",
+    materials: [DEMO_MATERIALS[3], DEMO_MATERIALS[4]],
+    status: "draft",
+    updatedAt: CONTENT_SET_UPDATED_AT,
+  },
 ];
