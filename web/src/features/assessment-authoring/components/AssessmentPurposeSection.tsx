@@ -78,20 +78,20 @@ export default function AssessmentPurposeSection({
               <>
                 <span className={styles.aiReadonlyNote}><LucideIcon name="lock" size={14} /> Propuesta generada por IA. Revísala antes de aceptarla.</span>
                 <div className={styles.aiDecisionActions}>
-                  <Button type="button" size="sm" variant="outline" onClick={acceptGenerated} startIcon={<LucideIcon name="clipboard-check" size={15} />}>Aceptar propuesta</Button>
-                  <Button type="button" size="sm" variant="secondary" onClick={editGenerated} startIcon={<LucideIcon name="file-pen-line" size={15} />}>Editar</Button>
+                  <Button type="button" size="md" variant="outline" onClick={acceptGenerated} startIcon={<LucideIcon name="clipboard-check" size={16} />}>Aceptar propuesta</Button>
+                  <Button type="button" size="md" variant="secondary" onClick={editGenerated} startIcon={<LucideIcon name="file-pen-line" size={16} />}>Editar</Button>
                 </div>
               </>
             ) : (
-              <Button type="button" size="sm" variant="secondary" disabled={disabled || !values.title.trim() || !values.topic.trim()} onClick={generateDraft} startIcon={<LucideIcon name="sparkles" size={15} />}>Generar</Button>
+              <Button type="button" size="md" variant="secondary" disabled={disabled || !values.title.trim() || !values.topic.trim()} onClick={generateDraft} startIcon={<LucideIcon name="ai" size={16} />}>Generar</Button>
             )}
           </div>
           {aiMode === "confirm" && (
             <div className={styles.aiConfirmation} role="status">
               <div><strong>¿Reemplazar el propósito actual?</strong><span>La IA generará una nueva propuesta usando el título, la temática y el texto que ya escribiste.</span></div>
               <div className={styles.aiDecisionActions}>
-                <Button type="button" size="sm" variant="outline" onClick={() => setAiMode("idle")}>Cancelar</Button>
-                <Button type="button" size="sm" onClick={confirmGeneration} startIcon={<LucideIcon name="sparkles" size={15} />}>Sí, generar</Button>
+                <Button type="button" size="md" variant="outline" onClick={() => setAiMode("idle")} startIcon={<LucideIcon name="x" size={16} />}>Cancelar</Button>
+                <Button type="button" size="md" onClick={confirmGeneration} startIcon={<LucideIcon name="ai" size={16} />}>Sí, generar</Button>
               </div>
             </div>
           )}
