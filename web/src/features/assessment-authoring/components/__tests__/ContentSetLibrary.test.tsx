@@ -10,9 +10,9 @@ describe("ContentSetLibrary", () => {
   it("selects an existing reusable set or starts a new one", () => {
     const onSelect = jest.fn();
     const onCreate = jest.fn();
-    render(<ContentSetLibrary contentSets={sets} selectedId="functions" mode="existing" canEdit onSelect={onSelect} onCreate={onCreate} />);
+    render(<ContentSetLibrary contentSets={sets} selectedIds={["functions"]} mode="existing" canEdit onSelect={onSelect} onCreate={onCreate} />);
 
-    expect(screen.getByText("Asocia contenidos a esta evaluación")).toBeInTheDocument();
+    expect(screen.getByText("Selecciona contenidos para esta evaluación")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /funciones/i }));
     fireEvent.click(screen.getByRole("button", { name: /crear nuevo/i }));
     expect(onSelect).toHaveBeenCalledWith("functions");
