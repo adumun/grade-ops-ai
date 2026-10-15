@@ -50,7 +50,7 @@ export default function ContentSetPage({ access = "editable", simulateSaveError 
     footer={<><div className={featureStyles.footerBack}><Button variant="outline" type="button" disabled={view.draft.saveState === "saving"} onClick={() => router.push("/preview/assessments/new/purpose")} startIcon={<LucideIcon name="arrow-left" size={16} />}>Volver al propósito</Button></div><div className={featureStyles.footerActions}><Button type="button" loading={view.draft.saveState === "saving"} disabled={!canEdit} onClick={() => { void view.draft.save(); }} startIcon={<LucideIcon name="save" size={16} />}>{view.draft.saveState === "saved" ? "Guardar cambios" : "Guardar asociación"}</Button><Button type="button" variant="secondary" disabled={!canEdit || view.draft.saveState === "saving"} onClick={continueToObjectives} endIcon={<LucideIcon name="arrow-right" size={16} />}>Continuar a objetivos</Button></div></>}
   >
     <div className={styles.contentLayout}>
-      <ContentSetLibrary contentSets={view.draft.reusableContentSets} selectedId={view.draft.mode === "existing" ? view.draft.draft?.id : undefined} mode={view.draft.mode} canEdit={canEdit} onSelect={view.draft.selectContentSet} onCreate={() => setCreateDialogOpen(true)} />
+      <ContentSetLibrary contentSets={view.draft.reusableContentSets} selectedIds={view.draft.selectedContentSetIds} mode={view.draft.mode} canEdit={canEdit} onSelect={view.draft.selectContentSet} onCreate={() => setCreateDialogOpen(true)} />
       <ContentSetSection values={view.draft.values} validation={view.draft.validation} validationRequested={view.draft.validationRequested} mode={view.draft.mode} canEdit={canEdit} saveState={view.draft.saveState} onChange={view.draft.update} onSave={() => { void view.draft.save(); }} onRetry={() => { void view.draft.save(); }} onCancel={() => router.push("/preview/assessments/new/purpose")} showActions={false} />
       <ContentSetCreateDialog
         open={createDialogOpen}
@@ -63,9 +63,9 @@ export default function ContentSetPage({ access = "editable", simulateSaveError 
       />
       <MaterialUploader fixtures={view.draft.fixtures} disabled={!canEditMaterials || view.draft.saveState === "saving"} onAdd={view.draft.addMaterial} />
       <section className={styles.materialsSection} aria-labelledby="materials-title">
-        <div className={styles.materialsHeader}><div><h2 id="materials-title">Materiales asociados</h2><p>{view.draft.materials.length === 0 ? "Todavía no hay materiales asociados." : `${view.draft.materials.length} material${view.draft.materials.length === 1 ? "" : "es"} asociados.`}</p></div><Badge tone="neutral">{view.draft.mode === "existing" ? "Reutilizable · asociado" : "Nuevo · borrador"}</Badge></div>
+        <div className={styles.materialsHeader}><div><h2 id="materials-title">Materiales de los contenidos vinculados</h2><p>{view.draft.materials.length === 0 ? "Todavía no hay materiales asociados." : `${view.draft.materials.length} material${view.draft.materials.length === 1 ? "" : "es"} asociados.`}</p></div><Badge tone="neutral">{view.draft.mode === "existing" ? "Reutilizable · asociado" : "Nuevo · borrador"}</Badge></div>
         <MaterialList materials={view.draft.materials} disabled={!canEditMaterials || view.draft.saveState === "saving"} onRemove={view.draft.removeMaterial} onMove={view.draft.reorderMaterial} />
-        <p className={styles.continueHint}>La evaluación usará esta asociación en la etapa de objetivos; los materiales siguen perteneciendo al conjunto reutilizable.</p>
+        <p className={styles.continueHint}>Estos materiales quedan disponibles para la etapa de objetivos y siguen perteneciendo a sus conjuntos reutilizables.</p>
       </section>
     </div>
   </AuthoringStageLayout></AppShell>;
