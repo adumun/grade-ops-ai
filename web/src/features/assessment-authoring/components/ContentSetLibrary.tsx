@@ -24,11 +24,13 @@ export default function ContentSetLibrary({ contentSets, selectedIds, canEdit, o
 
   const visibleContentSets = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+    const recentThreshold = new Date();
+    recentThreshold.setDate(recentThreshold.getDate() - 30);
     return contentSets.filter((contentSet) => {
       const matchesQuery = !normalizedQuery || `${contentSet.name} ${contentSet.description}`.toLowerCase().includes(normalizedQuery);
       const matchesFilter = filter === "all"
         || (filter === "with-materials" && contentSet.materials.length > 0)
-        || (filter === "recent" && contentSet.updatedAt >= "2026-10-01");
+        || (filter === "recent" && new Date(contentSet.updatedAt) >= recentThreshold);
       return matchesQuery && matchesFilter;
     });
   }, [contentSets, filter, query]);
