@@ -7,6 +7,7 @@ export type LucideIconName =
   | "bar-chart-3"
   | "bell"
   | "sparkles"
+  | "ai"
   | "log-out"
   | "chevron-right"
   | "trending-up"
@@ -47,6 +48,7 @@ const ICON_PATHS: Record<LucideIconName, string> = {
   "bar-chart-3": `<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>`,
   "bell": `<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>`,
   "sparkles": `<path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.7L12 14.6l-5 3.5 1.9-5.7L4 8.8h6.1L12 3z"/>`,
+  "ai": `<rect x="6" y="5" width="13" height="15" rx="2"/><path d="M9 16l2.2-6h1.6l2.2 6M9.8 13.8h4.4M16 10v6"/><path d="M3.5 3.5v3M2 5h3M20.5 2.5v2M19.5 3.5h2"/>`,
   "log-out": `<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>`,
   "chevron-right": `<polyline points="9 18 15 12 9 6"/>`,
   "trending-up": `<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>`,
