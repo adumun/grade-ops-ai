@@ -17,9 +17,9 @@ export function useContentSetData() {
     if (demoState === "loading") return;
     if (demoState === "error" && retryCount === 0) { setState({ status: "error", message: LOAD_ERROR }); return; }
     try {
-      const [contentSet, materialFixtures] = await Promise.all([localContentSetDataSource.getContentSet(), localContentSetDataSource.listMaterialFixtures()]);
+      const [contentSet, materialFixtures, reusableContentSets] = await Promise.all([localContentSetDataSource.getContentSet(), localContentSetDataSource.listMaterialFixtures(), localContentSetDataSource.listReusableContentSets()]);
       setFixtures(materialFixtures);
-      setState({ status: "ready", contentSet: demoState === "empty" ? { ...contentSet, name: "", description: "", materials: [] } : contentSet });
+      setState({ status: "ready", contentSet: demoState === "empty" ? { ...contentSet, name: "", description: "", materials: [] } : contentSet, reusableContentSets });
     } catch { setState({ status: "error", message: LOAD_ERROR }); }
   }, [demoState, retryCount]);
   useEffect(() => { void load(); }, [load]);
