@@ -78,12 +78,12 @@ export default function AssessmentPurposeSection({
               <>
                 <span className={styles.aiReadonlyNote}><LucideIcon name="lock" size={14} /> Propuesta generada por IA. Revísala antes de aceptarla.</span>
                 <div className={styles.aiDecisionActions}>
-                  <Button type="button" size="sm" variant="outline" onClick={acceptGenerated}><LucideIcon name="clipboard-check" size={15} /> Aceptar propuesta</Button>
-                  <Button type="button" size="sm" variant="secondary" onClick={editGenerated}><LucideIcon name="file-pen-line" size={15} /> Editar</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={acceptGenerated} startIcon={<LucideIcon name="clipboard-check" size={15} />}>Aceptar propuesta</Button>
+                  <Button type="button" size="sm" variant="secondary" onClick={editGenerated} startIcon={<LucideIcon name="file-pen-line" size={15} />}>Editar</Button>
                 </div>
               </>
             ) : (
-              <Button type="button" size="sm" variant="secondary" disabled={disabled || !values.title.trim() || !values.topic.trim()} onClick={generateDraft} startIcon={<LucideIcon name="sparkles" size={15} />}>Generar con IA</Button>
+              <Button type="button" size="sm" variant="secondary" disabled={disabled || !values.title.trim() || !values.topic.trim()} onClick={generateDraft} startIcon={<LucideIcon name="sparkles" size={15} />}>Generar</Button>
             )}
           </div>
           {aiMode === "confirm" && (
