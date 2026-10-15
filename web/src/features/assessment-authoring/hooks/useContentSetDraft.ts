@@ -58,6 +58,15 @@ export function useContentSetDraft(
     setSaveState("idle");
   };
 
+  const createNewContentSet = (nextValues: ContentSetValues) => {
+    setMode("new");
+    setDraft(undefined);
+    setValues(nextValues);
+    setMaterials([]);
+    setValidationRequested(false);
+    setSaveState("idle");
+  };
+
   const addMaterial = (id: string) => {
     const fixture = fixtures.find((item) => item.id === id);
     if (fixture && !materials.some((item) => item.id === id)) setMaterials((current) => [...current, { ...fixture }]);
@@ -103,6 +112,7 @@ export function useContentSetDraft(
     update,
     selectContentSet,
     startNewContentSet,
+    createNewContentSet,
     addMaterial,
     removeMaterial,
     reorderMaterial,
