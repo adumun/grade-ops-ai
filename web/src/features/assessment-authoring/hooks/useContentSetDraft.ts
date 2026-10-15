@@ -48,7 +48,7 @@ export function useContentSetDraft(
   const primarySelected = selectedContentSetIds
     .map((id) => availableContentSets.find((contentSet) => contentSet.id === id))
     .find((contentSet): contentSet is ContentSet => Boolean(contentSet));
-  const validation = { errors: {}, isReady: selectedContentSetIds.length > 0 || Boolean(values.name.trim()) };
+  const validation = { errors: {}, isReady: selectedContentSetIds.length > 0 };
   const update = (field: keyof ContentSetValues, value: string) => {
     setValidationRequested(false);
     setValues((current) => ({ ...current, [field]: value }));
@@ -135,7 +135,7 @@ export function useContentSetDraft(
     fixtures,
     reusableContentSets: availableContentSets,
     selectedContentSetIds,
-    mode: pendingNewId ? "new" as const : "existing" as const,
+    mode: pendingNewId ? "new" as const : selectedContentSetIds.length > 0 ? "existing" as const : "new" as const,
     validation,
     validationRequested,
     saveState,
