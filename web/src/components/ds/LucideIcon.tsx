@@ -26,7 +26,8 @@ export type LucideIconName =
   | "save"
   | "send"
   | "upload"
-  | "arrow-left";
+  | "arrow-left"
+  | "arrow-right";
 
 interface LucideIconProps {
   name: LucideIconName;
@@ -66,6 +67,7 @@ const ICON_PATHS: Record<LucideIconName, string> = {
   "send": `<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>`,
   "upload": `<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>`,
   "arrow-left": `<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>`,
+  "arrow-right": `<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>`,
 };
 
 export default function LucideIcon({
