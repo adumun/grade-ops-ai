@@ -49,7 +49,7 @@ const ICON_PATHS: Record<LucideIconName, string> = {
   "bar-chart-3": `<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>`,
   "bell": `<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>`,
   "sparkles": `<path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.7L12 14.6l-5 3.5 1.9-5.7L4 8.8h6.1L12 3z"/>`,
-  "ai": `<defs><linearGradient id="ai-gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#c43bd6"/><stop offset="100%" stop-color="#28b8e8"/></linearGradient></defs><path d="M12 1.5c.8 7 3.5 10.7 10.5 11.5-7 .8-9.7 4.5-10.5 11.5C11.2 17.5 7.5 13.8.5 13 7.5 12.2 11.2 8.5 12 1.5Z" fill="url(#ai-gradient)" stroke="none"/><path d="M4.5 15c.3 3 1.5 4.7 4.5 5-3 .3-4.2 2-4.5 5-.3-3-1.5-4.7-4.5-5 3-.3 4.2-2 4.5-5Z" fill="url(#ai-gradient)" stroke="none"/><path d="M20 2c.15 1.5.8 2.35 2 2.5-1.2.15-1.85 1-2 2.5-.15-1.5-.8-2.35-2-2.5 1.2-.15 1.85-1 2-2.5Z" fill="url(#ai-gradient)" stroke="none"/>`,
+  "ai": `<path d="M12 1.5c.8 7 3.5 10.7 10.5 11.5-7 .8-9.7 4.5-10.5 11.5C11.2 17.5 7.5 13.8.5 13 7.5 12.2 11.2 8.5 12 1.5Z" fill="currentColor" stroke="none"/><path d="M4.5 15c.3 3 1.5 4.7 4.5 5-3 .3-4.2 2-4.5 5-.3-3-1.5-4.7-4.5-5 3-.3 4.2-2 4.5-5Z" fill="currentColor" stroke="none"/><path d="M20 2c.15 1.5.8 2.35 2 2.5-1.2.15-1.85 1-2 2.5-.15-1.5-.8-2.35-2-2.5 1.2-.15 1.85-1 2-2.5Z" fill="currentColor" stroke="none"/>`,
   "x": `<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>`,
   "log-out": `<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>`,
   "chevron-right": `<polyline points="9 18 15 12 9 6"/>`,
