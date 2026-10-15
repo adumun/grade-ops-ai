@@ -8,6 +8,7 @@ import type { AssessmentAccess } from "../domain/types";
 export function useContentSetPage(access: AssessmentAccess = "editable", simulateSaveError = false) {
   const data = useContentSetData();
   const initial = data.state.status === "ready" ? data.state.contentSet : undefined;
-  const draft = useContentSetDraft(initial, data.fixtures, simulateSaveError);
+  const reusableContentSets = data.state.status === "ready" ? data.state.reusableContentSets : [];
+  const draft = useContentSetDraft(initial, data.fixtures, reusableContentSets, simulateSaveError);
   return useMemo(() => ({ dataState: data.state, draft, access, retryLoad: data.retry, resetDemoData: data.reset }), [access, data.reset, data.retry, data.state, draft]);
 }
