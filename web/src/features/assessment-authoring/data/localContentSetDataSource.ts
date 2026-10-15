@@ -45,8 +45,9 @@ export const localContentSetDataSource: ContentSetDataSource = {
       return [saved, ...demoSets.filter((contentSet) => contentSet.id !== saved.id)];
     } catch { return demoSets; }
   },
-  async saveContentSet(values, materials, existingId = CONTENT_SET_ID) {
-    const contentSet: ContentSet = { id: existingId, name: values.name.trim(), description: values.description.trim(), materials, status: "draft", updatedAt: CONTENT_SET_UPDATED_AT };
+  async saveContentSet(values, materials, existingId) {
+    const id = existingId ?? `content-set-local-${Date.now()}`;
+    const contentSet: ContentSet = { id, name: values.name.trim(), description: values.description.trim(), materials, status: "draft", updatedAt: new Date().toISOString() };
     if (canUseStorage()) window.localStorage.setItem(CONTENT_SET_STORAGE_KEY, JSON.stringify(contentSet));
     return contentSet;
   },
