@@ -18,7 +18,7 @@ function formatUpdatedAt(value: string) {
 }
 
 export default function LinkedContentList({ contentSets, selectedIds, canEdit, onRemove }: Props) {
-  const linked = selectedIds.map((id) => contentSets.find((contentSet) => contentSet.id === id)).filter((contentSet): contentSet is ContentSet => Boolean(contentSet));
+  const uniqueContentSets = Array.from(new Map(contentSets.map((contentSet) => [contentSet.id, contentSet])).values());
 
   return (
     <section className={styles.linkedSection} aria-labelledby="linked-content-title">
