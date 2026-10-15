@@ -40,8 +40,8 @@ export default function AssessmentPurposeSection({
   const generateDraft = () => {
     const title = values.title.trim() || "esta evaluación";
     const topic = values.topic.trim() || "la temática definida";
-    const draftContext = values.purpose.trim() ? " Considerando también tu borrador: «" + values.purpose.trim() + "»." : "";
-    setGeneratedPurpose("Que el estudiante comprenda " + topic.toLowerCase() + " y pueda demostrarlo mediante una producción relacionada con «" + title + "»." + draftContext);
+    const draftContext = values.purpose.trim() ? " A partir del borrador docente, " : "";
+    setGeneratedPurpose(draftContext + "el estudiante comprenderá " + topic.toLowerCase() + " y podrá demostrarlo mediante una producción relacionada con «" + title + "».");
     setAiMode("confirm");
   };
 
