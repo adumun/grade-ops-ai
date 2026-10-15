@@ -17,11 +17,11 @@ export function useContentSetData() {
     if (demoState === "loading") return;
     if (demoState === "error" && retryCount === 0) { setState({ status: "error", message: LOAD_ERROR }); return; }
     try {
-      const [contentSet, materialFixtures, reusableContentSets, associatedContentSetId] = await Promise.all([localContentSetDataSource.getContentSet(), localContentSetDataSource.listMaterialFixtures(), localContentSetDataSource.listReusableContentSets(), localContentSetDataSource.getAssociatedContentSetId()]);
-      const associatedContentSet = associatedContentSetId ? reusableContentSets.find((item) => item.id === associatedContentSetId) : undefined;
+      const [contentSet, materialFixtures, reusableContentSets, associatedContentSetIds] = await Promise.all([localContentSetDataSource.getContentSet(), localContentSetDataSource.listMaterialFixtures(), localContentSetDataSource.listReusableContentSets(), localContentSetDataSource.getAssociatedContentSetIds()]);
+      const associatedContentSet = associatedContentSetIds.map((id) => reusableContentSets.find((item) => item.id === id)).find((item): item is NonNullable<typeof item> => Boolean(item));
       const resolvedContentSet = associatedContentSet ?? contentSet;
       setFixtures(materialFixtures);
-      setState({ status: "ready", contentSet: demoState === "empty" ? { ...resolvedContentSet, name: "", description: "", materials: [] } : resolvedContentSet, reusableContentSets });
+      setState({ status: "ready", contentSet: demoState === "empty" ? { ...resolvedContentSet, name: "", description: "", materials: [] } : resolvedContentSet, reusableContentSets, associatedContentSetIds });
     } catch { setState({ status: "error", message: LOAD_ERROR }); }
   }, [demoState, retryCount]);
   useEffect(() => { void load(); }, [load]);
