@@ -25,7 +25,7 @@ export const localContentSetDataSource: ContentSetDataSource = {
     if (!raw) return [];
     try {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed.filter((id): id is string => typeof id === "string");
+      if (Array.isArray(parsed)) return Array.from(new Set(parsed.filter((id): id is string => typeof id === "string")));
       return typeof parsed === "string" ? [parsed] : [];
     } catch {
       return raw ? [raw] : [];
