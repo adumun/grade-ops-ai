@@ -17,9 +17,11 @@ export function useContentSetData() {
     if (demoState === "loading") return;
     if (demoState === "error" && retryCount === 0) { setState({ status: "error", message: LOAD_ERROR }); return; }
     try {
-      const [contentSet, materialFixtures, reusableContentSets] = await Promise.all([localContentSetDataSource.getContentSet(), localContentSetDataSource.listMaterialFixtures(), localContentSetDataSource.listReusableContentSets()]);
+      const [contentSet, materialFixtures, reusableContentSets, associatedContentSetId] = await Promise.all([localContentSetDataSource.getContentSet(), localContentSetDataSource.listMaterialFixtures(), localContentSetDataSource.listReusableContentSets(), localContentSetDataSource.getAssociatedContentSetId()]);
+      const associatedContentSet = associatedContentSetId ? reusableContentSets.find((item) => item.id === associatedContentSetId) : undefined;
+      const resolvedContentSet = associatedContentSet ?? contentSet;
       setFixtures(materialFixtures);
-      setState({ status: "ready", contentSet: demoState === "empty" ? { ...contentSet, name: "", description: "", materials: [] } : contentSet, reusableContentSets });
+      setState({ status: "ready", contentSet: demoState === "empty" ? { ...resolvedContentSet, name: "", description: "", materials: [] } : resolvedContentSet, reusableContentSets });
     } catch { setState({ status: "error", message: LOAD_ERROR }); }
   }, [demoState, retryCount]);
   useEffect(() => { void load(); }, [load]);
