@@ -32,7 +32,7 @@
 .md .icon svg { width: var(--button-icon-md); height: var(--button-icon-md); }
 .lg .icon svg { width: var(--button-icon-lg); height: var(--button-icon-lg); }
 
-.primary { background: var(--button-primary-bg); color: var(--button-primary-fg); }
+.primary { background: var(--button-primary-bg); color: var(--button-primary-fg) !important; }
 .primary:hover:not(:disabled) { background: var(--button-primary-hover-bg); box-shadow: var(--shadow-brand); }
 .primary:active:not(:disabled) { background: var(--button-primary-active-bg); }
 
