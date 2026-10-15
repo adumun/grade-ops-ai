@@ -17,6 +17,7 @@ export function useAssessmentDraft(initialDraft?: AssessmentDraft, simulateSaveE
   });
   const [draft, setDraft] = useState(initialDraft);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [validationRequested, setValidationRequested] = useState(false);
   const hasFailedOnce = useRef(false);
 
   useEffect(() => {
@@ -26,9 +27,13 @@ export function useAssessmentDraft(initialDraft?: AssessmentDraft, simulateSaveE
   }, [draft?.id, initialDraft]);
 
   const validation = assessAssessmentReadiness(values);
-  const update = (field: keyof AssessmentDraftValues, value: string) => setValues((current) => ({ ...current, [field]: value }));
+  const update = (field: keyof AssessmentDraftValues, value: string) => {
+    setValues((current) => ({ ...current, [field]: value }));
+    setSaveState("idle");
+  };
 
   async function save() {
+    setValidationRequested(true);
     if (!validation.isReady || demoState === "readonly" || demoState === "permission") return false;
     setSaveState("saving");
     await new Promise((resolve) => setTimeout(resolve, 80));
@@ -49,5 +54,14 @@ export function useAssessmentDraft(initialDraft?: AssessmentDraft, simulateSaveE
     }
   }
 
-  return { values, draft, validation, saveState, update, save, canEdit: demoState !== "readonly" && demoState !== "permission" };
+  return {
+    values,
+    draft,
+    validation,
+    validationRequested,
+    saveState,
+    update,
+    save,
+    canEdit: demoState !== "readonly" && demoState !== "permission",
+  };
 }
