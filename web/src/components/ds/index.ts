@@ -1,6 +1,7 @@
 export { default as Button } from "./Button";
 export { default as Avatar } from "./Avatar";
 export { default as IconButton } from "./IconButton";
+export type { IconButtonVariant, IconButtonSize, IconButtonShape } from "./IconButton";
 export { default as LucideIcon } from "./LucideIcon";
 export type { LucideIconName } from "./LucideIcon";
 export { default as Input } from "./Input";
