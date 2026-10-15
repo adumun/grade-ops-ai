@@ -46,7 +46,7 @@ export type ContentSet = {
 export type ContentSetValues = Pick<ContentSet, "name" | "description">;
 export type ContentSetDataState =
   | { status: "loading" }
-  | { status: "ready"; contentSet: ContentSet }
+  | { status: "ready"; contentSet: ContentSet; reusableContentSets: ContentSet[] }
   | { status: "error"; message: string };
 export type ContentSetValidation = { errors: Partial<Record<keyof ContentSetValues, string>>; isReady: boolean };
 
