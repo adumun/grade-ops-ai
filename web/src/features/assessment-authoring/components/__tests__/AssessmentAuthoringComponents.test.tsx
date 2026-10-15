@@ -12,9 +12,9 @@ describe("assessment authoring components", () => {
     expect(screen.getByText(/institución, el curso, la sección y los alumnos/i)).toBeInTheDocument();
   });
 
-  it("edits all minimum fields and exposes title validation", () => {
+  it("edits all minimum fields and exposes validation after a save request", () => {
     const onChange = jest.fn();
-    render(<AssessmentPurposeSection values={{ title: "", topic: "", purpose: "" }} validation={{ errors: { title: "Ingresa un título para guardar la evaluación." }, warnings: [], isReady: false }} canEdit saveState="idle" onChange={onChange} onSave={jest.fn()} onRetry={jest.fn()} onCancel={jest.fn()} />);
+    render(<AssessmentPurposeSection values={{ title: "", topic: "", purpose: "" }} validation={{ errors: { title: "Ingresa un título para guardar la evaluación." }, warnings: [], isReady: false }} validationRequested canEdit saveState="idle" onChange={onChange} onSave={jest.fn()} onRetry={jest.fn()} onCancel={jest.fn()} />);
     expect(screen.getByRole("textbox", { name: /^Título/ })).toHaveAttribute("id", "assessment-title");
     expect(screen.getByRole("textbox", { name: "Temática" })).toHaveAttribute("id", "assessment-topic");
     expect(screen.getByRole("textbox", { name: "Propósito pedagógico" })).toHaveAttribute("id", "assessment-purpose");
