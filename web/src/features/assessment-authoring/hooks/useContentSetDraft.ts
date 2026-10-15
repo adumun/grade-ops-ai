@@ -13,14 +13,17 @@ export function useContentSetDraft(
   initial: ContentSet | undefined,
   fixtures: Material[],
   reusableContentSets: ContentSet[],
+  associatedContentSetIds: string[] = [],
   simulateSaveError = false,
 ) {
   const { demoState } = useDemoState();
+  const initialSelectedIds = associatedContentSetIds.length > 0 ? associatedContentSetIds : initial?.name ? [initial.id] : [];
   const [values, setValues] = useState<ContentSetValues>({ name: initial?.name ?? "", description: initial?.description ?? "" });
   const [materials, setMaterials] = useState<Material[]>(initial?.materials ?? []);
   const [saveState, setSaveState] = useState<ContentSetSaveState>("idle");
   const [draft, setDraft] = useState(initial);
-  const [mode, setMode] = useState<ContentSetMode>(initial?.name ? "existing" : "new");
+  const [selectedContentSetIds, setSelectedContentSetIds] = useState<string[]>(initialSelectedIds);
+  const [mode, setMode] = useState<ContentSetMode>(initialSelectedIds.length > 0 ? "existing" : "new");
   const [validationRequested, setValidationRequested] = useState(false);
   const hasFailedOnce = useRef(false);
 
@@ -29,7 +32,10 @@ export function useContentSetDraft(
     setDraft(initial);
     setValues({ name: initial.name, description: initial.description });
     setMaterials(initial.materials);
-    setMode(initial.name ? "existing" : "new");
+    setSelectedContentSetIds(initialSelectedIds);
+    setMode(initialSelectedIds.length > 0 ? "existing" : "new");
+  // The initial data object is the source snapshot; do not reset on selection changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial]);
 
   const validation = validateContentSet(values);
@@ -41,10 +47,22 @@ export function useContentSetDraft(
   const selectContentSet = (id: string) => {
     const selected = reusableContentSets.find((contentSet) => contentSet.id === id);
     if (!selected) return;
-    setMode("existing");
-    setDraft(selected);
-    setValues({ name: selected.name, description: selected.description });
-    setMaterials(selected.materials.map((material) => ({ ...material })));
+    setSelectedContentSetIds((current) => {
+      const nextIds = current.includes(id) ? current.filter((currentId) => currentId !== id) : [...current, id];
+      const primary = nextIds.map((contentSetId) => reusableContentSets.find((contentSet) => contentSet.id === contentSetId)).find((item): item is ContentSet => Boolean(item));
+      if (primary) {
+        setDraft(primary);
+        setValues({ name: primary.name, description: primary.description });
+        setMaterials(primary.materials.map((material) => ({ ...material })));
+        setMode("existing");
+      } else {
+        setDraft(undefined);
+        setValues({ name: "", description: "" });
+        setMaterials([]);
+        setMode("new");
+      }
+      return nextIds;
+    });
     setValidationRequested(false);
     setSaveState("idle");
   };
@@ -52,6 +70,7 @@ export function useContentSetDraft(
   const startNewContentSet = () => {
     setMode("new");
     setDraft(undefined);
+    setSelectedContentSetIds([]);
     setValues({ name: "", description: "" });
     setMaterials([]);
     setValidationRequested(false);
@@ -59,12 +78,8 @@ export function useContentSetDraft(
   };
 
   const createNewContentSet = (nextValues: ContentSetValues) => {
-    setMode("new");
-    setDraft(undefined);
+    startNewContentSet();
     setValues(nextValues);
-    setMaterials([]);
-    setValidationRequested(false);
-    setSaveState("idle");
   };
 
   const addMaterial = (id: string) => {
@@ -85,16 +100,17 @@ export function useContentSetDraft(
       return false;
     }
     try {
-      if (mode === "existing" && draft?.id) {
-        await localContentSetDataSource.saveAssociation(draft.id);
+      if (mode === "existing" && selectedContentSetIds.length > 0) {
+        await localContentSetDataSource.saveAssociation(selectedContentSetIds);
         setSaveState("saved");
         return true;
       }
       const next = await localContentSetDataSource.saveContentSet(values, materials);
-      await localContentSetDataSource.saveAssociation(next.id);
+      await localContentSetDataSource.saveAssociation([next.id]);
       setDraft(next);
       setValues({ name: next.name, description: next.description });
       setMaterials(next.materials);
+      setSelectedContentSetIds([next.id]);
       setMode("existing");
       setSaveState("saved");
       return true;
@@ -110,6 +126,7 @@ export function useContentSetDraft(
     draft,
     fixtures,
     reusableContentSets,
+    selectedContentSetIds,
     mode,
     validation,
     validationRequested,
