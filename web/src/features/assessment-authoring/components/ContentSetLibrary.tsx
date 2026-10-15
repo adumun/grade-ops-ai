@@ -21,12 +21,12 @@ type Filter = "all" | "with-materials" | "recent";
 export default function ContentSetLibrary({ contentSets, selectedIds, canEdit, onSelect, onCreate }: Props) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-    const uniqueContentSets = useMemo(() => Array.from(new Map(contentSets.map((contentSet) => [contentSet.id, contentSet])).values()), [contentSets]);
+  const uniqueContentSets = useMemo(() => Array.from(new Map(contentSets.map((contentSet) => [contentSet.id, contentSet])).values()), [contentSets]);
   const visibleContentSets = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     const recentThreshold = new Date();
     recentThreshold.setDate(recentThreshold.getDate() - 30);
-    return contentSets.filter((contentSet) => {
+    return uniqueContentSets.filter((contentSet) => {
       const matchesQuery = !normalizedQuery || `${contentSet.name} ${contentSet.description}`.toLowerCase().includes(normalizedQuery);
       const matchesFilter = filter === "all"
         || (filter === "with-materials" && contentSet.materials.length > 0)
@@ -43,7 +43,7 @@ export default function ContentSetLibrary({ contentSets, selectedIds, canEdit, o
           <h2 id="content-library-title">Selecciona contenidos</h2>
           <p>Elige uno o más contenidos reutilizables para esta evaluación. La selección no duplica ni modifica sus recursos.</p>
         </div>
-        <Badge tone="neutral">{contentSets.length} disponibles</Badge>
+        <Badge tone="neutral">{uniqueContentSets.length} disponibles</Badge>
       </div>
 
       <div className={styles.libraryToolbar}>
