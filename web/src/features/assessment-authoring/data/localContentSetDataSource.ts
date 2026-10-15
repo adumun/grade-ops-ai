@@ -1,6 +1,6 @@
 import type { ContentSet } from "../domain/types";
 import type { ContentSetDataSource } from "./contentSetDataSource";
-import { CONTENT_SET_ID, CONTENT_SET_STORAGE_KEY, CONTENT_SET_UPDATED_AT, DEMO_CONTENT_SETS, DEMO_MATERIALS } from "./fixtureContentSetDataSource";
+import { CONTENT_SET_ASSOCIATION_STORAGE_KEY, CONTENT_SET_ID, CONTENT_SET_STORAGE_KEY, CONTENT_SET_UPDATED_AT, DEMO_CONTENT_SETS, DEMO_MATERIALS } from "./fixtureContentSetDataSource";
 
 function canUseStorage() { return typeof window !== "undefined" && Boolean(window.localStorage); }
 
@@ -19,6 +19,13 @@ export const localContentSetDataSource: ContentSetDataSource = {
     } catch { return emptyContentSet(); }
   },
   async listMaterialFixtures() { return DEMO_MATERIALS.map((material) => ({ ...material })); },
+  async getAssociatedContentSetId() {
+    if (!canUseStorage()) return undefined;
+    return window.localStorage.getItem(CONTENT_SET_ASSOCIATION_STORAGE_KEY) ?? undefined;
+  },
+  async saveAssociation(contentSetId) {
+    if (canUseStorage()) window.localStorage.setItem(CONTENT_SET_ASSOCIATION_STORAGE_KEY, contentSetId);
+  },
   async listReusableContentSets() {
     const demoSets = DEMO_CONTENT_SETS.map((contentSet) => ({ ...contentSet, materials: contentSet.materials.map((material) => ({ ...material })) }));
     if (!canUseStorage()) return demoSets;
@@ -35,5 +42,5 @@ export const localContentSetDataSource: ContentSetDataSource = {
     if (canUseStorage()) window.localStorage.setItem(CONTENT_SET_STORAGE_KEY, JSON.stringify(contentSet));
     return contentSet;
   },
-  async reset() { if (canUseStorage()) window.localStorage.removeItem(CONTENT_SET_STORAGE_KEY); },
+  async reset() { if (canUseStorage()) { window.localStorage.removeItem(CONTENT_SET_STORAGE_KEY); window.localStorage.removeItem(CONTENT_SET_ASSOCIATION_STORAGE_KEY); } },
 };
