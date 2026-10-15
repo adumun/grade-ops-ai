@@ -46,7 +46,7 @@
 .link:hover:not(:disabled) { background: var(--button-link-hover-bg); text-decoration: underline; }
 
 .icon { display: inline-flex; flex: 0 0 auto; color: currentColor; }
-.label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.label { min-width: 0; overflow: hidden; color: inherit; text-overflow: ellipsis; }
 .spinner { width: 1em; height: 1em; flex: 0 0 auto; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: button-spin var(--dur-slow) linear infinite; }
 
 @keyframes button-spin { to { transform: rotate(360deg); } }
