@@ -49,7 +49,7 @@ describe("assessment authoring components", () => {
 
   it("edits a content set and disables it while saving", () => {
     const onChange = jest.fn();
-    render(<ContentSetSection values={{ name: "", description: "" }} validation={{ errors: { name: "Ingresa un nombre para el conjunto." }, isReady: false }} canEdit saveState="saving" onChange={onChange} onSave={jest.fn()} onRetry={jest.fn()} onCancel={jest.fn()} />);
+    render(<ContentSetSection values={{ name: "", description: "" }} validation={{ errors: { name: "Ingresa un nombre para el conjunto." }, isReady: false }} validationRequested mode="new" canEdit saveState="saving" onChange={onChange} onSave={jest.fn()} onRetry={jest.fn()} onCancel={jest.fn()} />);
     expect(screen.getByRole("textbox", { name: /nombre del conjunto/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /guardar conjunto/i })).toBeDisabled();
   });
