@@ -28,6 +28,7 @@ export default function AssessmentPurposeSection({
   canEdit,
   saveState,
   onChange,
+  onSave,
   onRetry,
   onCancel,
   onContinue,
