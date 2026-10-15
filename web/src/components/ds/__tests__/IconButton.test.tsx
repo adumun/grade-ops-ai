@@ -13,7 +13,9 @@ describe("IconButton", () => {
     const button = screen.getByRole("button", { name: "Abrir navegación" });
     expect(button).toHaveAttribute("title", "Abrir navegación");
     expect(button).toHaveAttribute("aria-pressed", "true");
-    expect(button).toHaveClass("solid", "lg", "circle");
+    expect(button).toHaveAttribute("data-variant", "solid");
+    expect(button).toHaveAttribute("data-size", "lg");
+    expect(button).toHaveAttribute("data-shape", "circle");
     expect(button.querySelector("svg")).toBeInTheDocument();
   });
 
