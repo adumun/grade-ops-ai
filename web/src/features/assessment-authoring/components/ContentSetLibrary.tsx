@@ -21,7 +21,7 @@ type Filter = "all" | "with-materials" | "recent";
 export default function ContentSetLibrary({ contentSets, selectedIds, canEdit, onSelect, onCreate }: Props) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-
+    const uniqueContentSets = useMemo(() => Array.from(new Map(contentSets.map((contentSet) => [contentSet.id, contentSet])).values()), [contentSets]);
   const visibleContentSets = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     const recentThreshold = new Date();
@@ -33,7 +33,7 @@ export default function ContentSetLibrary({ contentSets, selectedIds, canEdit, o
         || (filter === "recent" && new Date(contentSet.updatedAt) >= recentThreshold);
       return matchesQuery && matchesFilter;
     });
-  }, [contentSets, filter, query]);
+  }, [uniqueContentSets, filter, query]);
 
   return (
     <section className={styles.librarySection} aria-labelledby="content-library-title">
