@@ -13,6 +13,6 @@ describe("ContentSetCreateDialog", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /descripción/i }), { target: { value: "Base reutilizable" } });
     fireEvent.click(screen.getByRole("button", { name: /crear conjunto/i }));
 
-    expect(onCreate).toHaveBeenCalledWith({ name: "Funciones y modularidad", description: "Base reutilizable" });
+    expect(onCreate).toHaveBeenCalledWith({ name: "Funciones y modularidad", description: "Base reutilizable", materialIds: [] });
   });
 });
