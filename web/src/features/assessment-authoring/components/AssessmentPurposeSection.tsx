@@ -77,8 +77,8 @@ export default function AssessmentPurposeSection({
               <>
                 <span className={styles.aiReadonlyNote}><LucideIcon name="lock" size={14} /> Propuesta generada por IA. Revísala antes de aceptarla.</span>
                 <div className={styles.aiDecisionActions}>
-                  <Button type="button" size="sm" variant="outline" onClick={acceptGenerated}><LucideIcon name="check" size={15} /> Aceptar propuesta</Button>
-                  <Button type="button" size="sm" variant="secondary" onClick={editGenerated}><LucideIcon name="edit-2" size={15} /> Editar</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={acceptGenerated}><LucideIcon name="clipboard-check" size={15} /> Aceptar propuesta</Button>
+                  <Button type="button" size="sm" variant="secondary" onClick={editGenerated}><LucideIcon name="file-pen-line" size={15} /> Editar</Button>
                 </div>
               </>
             ) : (
