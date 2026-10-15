@@ -11,6 +11,7 @@ import PageHeader from "@/components/shell/PageHeader";
 import PageNotFound from "@/components/shell/PageNotFound";
 import { useDemoState, useShellConfig } from "@/components/shell/ShellContext";
 import ContentSetSection from "./components/ContentSetSection";
+import ContentSetLibrary from "./components/ContentSetLibrary";
 import MaterialList from "./components/MaterialList";
 import MaterialUploader from "./components/MaterialUploader";
 import AuthoringStageLayout from "./components/AuthoringStageLayout";
@@ -20,16 +21,41 @@ import featureStyles from "./components/AssessmentAuthoring.module.css";
 import type { AssessmentAccess } from "./domain/types";
 
 export default function ContentSetPage({ access = "editable", simulateSaveError = false }: { access?: AssessmentAccess; simulateSaveError?: boolean }) {
-  useShellConfig({ title: "Nueva evaluación", subtitle: "Contenidos reutilizables" });
+  useShellConfig({ title: "Nueva evaluación", subtitle: "Asocia contenidos reutilizables" });
   const { demoState } = useDemoState();
   const router = useRouter();
   const view = useContentSetPage(access, simulateSaveError);
   const isReadOnly = access === "read-only" || demoState === "readonly";
   const canEdit = view.draft.canEdit && !isReadOnly;
-  if (view.dataState.status === "loading") return <AppShell><Page><PageHeader eyebrow="Nueva evaluación · Vista previa local" title="Contenidos y materiales" description="Cargando el conjunto local…" /><div className={featureStyles.loadingState} aria-busy="true" aria-label="Cargando contenidos"><LucideIcon name="sparkles" size={28} /><p>Cargando…</p></div></Page></AppShell>;
-  if (view.dataState.status === "error") return <AppShell><Page><PageHeader eyebrow="Nueva evaluación · Vista previa local" title="Contenidos y materiales" description="No se pudo cargar el conjunto local." /><div className={featureStyles.errorState} role="alert"><LucideIcon name="alert-triangle" size={28} color="var(--danger-600)" /><h2>No pudimos cargar tus contenidos</h2><p>{view.dataState.message}</p><Button onClick={view.retryLoad}>Reintentar</Button></div></Page></AppShell>;
-  if (access === "permission-denied" || demoState === "permission") return <AppShell><Page><PageHeader eyebrow="Nueva evaluación · Vista previa local" title="Contenidos y materiales" description="Revisa el conjunto, si tu rol tiene acceso." /><div className={featureStyles.permissionState} role="alert"><LucideIcon name="lock" size={28} /><h2>No tienes permisos para editar contenidos</h2><p>Este conjunto queda disponible en modo consulta para tu rol actual.</p><Link className={featureStyles.backLink} href="/preview/assessments/new/purpose">Volver al propósito</Link></div></Page></AppShell>;
-  return <AppShell><AuthoringStageLayout stage="content" eyebrow="Nueva evaluación · Vista previa local" title="Contenidos y materiales" description="Construye un conjunto reutilizable antes de definir objetivos." backAction={<Link className={featureStyles.secondaryLink} href="/preview/assessments/new/purpose">Volver al propósito</Link>} readOnlyNotice={isReadOnly ? <div className={featureStyles.readonlyNotice} role="status">Solo lectura: puedes revisar el conjunto, pero no modificarlo ni guardarlo.</div> : undefined} footer={<><Button variant="outline" type="button" disabled={view.draft.saveState === "saving"} onClick={() => router.push("/preview/assessments/new/purpose")} startIcon={<LucideIcon name="arrow-left" size={16} />}>Volver al propósito</Button><Button type="button" loading={view.draft.saveState === "saving"} disabled={!view.draft.validation.isReady || !canEdit} onClick={() => { void view.draft.save(); }} startIcon={<LucideIcon name="save" size={16} />}>{view.draft.saveState === "saved" ? "Guardar cambios" : "Guardar conjunto"}</Button><Link className={featureStyles.secondaryLink} href="/preview/assessments/new/objectives">Continuar a objetivos</Link></>}><div className={styles.contentLayout}><ContentSetSection values={view.draft.values} validation={view.draft.validation} canEdit={canEdit} saveState={view.draft.saveState} onChange={view.draft.update} onSave={() => { void view.draft.save(); }} onRetry={() => { void view.draft.save(); }} onCancel={() => router.push("/preview/assessments/new/purpose")} showActions={false} /><MaterialUploader fixtures={view.draft.fixtures} disabled={!canEdit || view.draft.saveState === "saving"} onAdd={view.draft.addMaterial} /><section className={styles.materialsSection} aria-labelledby="materials-title"><div className={styles.materialsHeader}><div><h2 id="materials-title">Materiales del conjunto</h2><p>{view.draft.materials.length === 0 ? "Todavía no hay materiales." : `${view.draft.materials.length} material${view.draft.materials.length === 1 ? "" : "es"} agregado${view.draft.materials.length === 1 ? "" : "s"}.`}</p></div><Badge tone="neutral">Demo local · borrador</Badge></div><MaterialList materials={view.draft.materials} disabled={!canEdit || view.draft.saveState === "saving"} onRemove={view.draft.removeMaterial} onMove={view.draft.reorderMaterial} /><p className={styles.continueHint}>Los contenidos están listos para vincularlos con objetivos medibles.</p></section></div></AuthoringStageLayout></AppShell>;
+
+  if (view.dataState.status === "loading") return <AppShell><Page><PageHeader eyebrow="Nueva evaluación · Vista previa local" title="Contenidos de la evaluación" description="Cargando la biblioteca local…" /><div className={featureStyles.loadingState} aria-busy="true" aria-label="Cargando contenidos"><LucideIcon name="sparkles" size={28} /><p>Cargando…</p></div></Page></AppShell>;
+  if (view.dataState.status === "error") return <AppShell><Page><PageHeader eyebrow="Nueva evaluación · Vista previa local" title="Contenidos de la evaluación" description="No se pudo cargar la biblioteca local." /><div className={featureStyles.errorState} role="alert"><LucideIcon name="alert-triangle" size={28} color="var(--danger-600)" /><h2>No pudimos cargar tus contenidos</h2><p>{view.dataState.message}</p><Button onClick={view.retryLoad}>Reintentar</Button></div></Page></AppShell>;
+  if (access === "permission-denied" || demoState === "permission") return <AppShell><Page><PageHeader eyebrow="Nueva evaluación · Vista previa local" title="Contenidos de la evaluación" description="Revisa la asociación si tu rol tiene acceso." /><div className={featureStyles.permissionState} role="alert"><LucideIcon name="lock" size={28} /><h2>No tienes permisos para editar contenidos</h2><p>La biblioteca queda disponible en modo consulta para tu rol actual.</p><Link className={featureStyles.backLink} href="/preview/assessments/new/purpose">Volver al propósito</Link></div></Page></AppShell>;
+
+  const continueToObjectives = async () => {
+    if (await view.draft.save()) router.push("/preview/assessments/new/objectives");
+  };
+
+  return <AppShell><AuthoringStageLayout
+    stage="content"
+    eyebrow="Nueva evaluación · Vista previa local"
+    title="Contenidos de la evaluación"
+    description="Asocia recursos reutilizables o crea un conjunto nuevo para esta evaluación."
+    backAction={<Link className={featureStyles.secondaryLink} href="/preview/assessments/new/purpose">Volver al propósito</Link>}
+    readOnlyNotice={isReadOnly ? <div className={featureStyles.readonlyNotice} role="status">Solo lectura: puedes revisar la asociación, pero no modificarla ni guardarla.</div> : undefined}
+    footer={<><div className={featureStyles.footerBack}><Button variant="outline" type="button" disabled={view.draft.saveState === "saving"} onClick={() => router.push("/preview/assessments/new/purpose")} startIcon={<LucideIcon name="arrow-left" size={16} />}>Volver al propósito</Button></div><div className={featureStyles.footerActions}><Button type="button" loading={view.draft.saveState === "saving"} disabled={!canEdit} onClick={() => { void view.draft.save(); }} startIcon={<LucideIcon name="save" size={16} />}>{view.draft.saveState === "saved" ? "Guardar cambios" : "Guardar asociación"}</Button><Button type="button" variant="secondary" disabled={!canEdit || view.draft.saveState === "saving"} onClick={continueToObjectives} endIcon={<LucideIcon name="arrow-right" size={16} />}>Continuar a objetivos</Button></div></>}
+  >
+    <div className={styles.contentLayout}>
+      <ContentSetLibrary contentSets={view.draft.reusableContentSets} selectedId={view.draft.mode === "existing" ? view.draft.draft?.id : undefined} mode={view.draft.mode} canEdit={canEdit} onSelect={view.draft.selectContentSet} onCreate={view.draft.startNewContentSet} />
+      <ContentSetSection values={view.draft.values} validation={view.draft.validation} validationRequested={view.draft.validationRequested} mode={view.draft.mode} canEdit={canEdit} saveState={view.draft.saveState} onChange={view.draft.update} onSave={() => { void view.draft.save(); }} onRetry={() => { void view.draft.save(); }} onCancel={() => router.push("/preview/assessments/new/purpose")} showActions={false} />
+      <MaterialUploader fixtures={view.draft.fixtures} disabled={!canEdit || view.draft.saveState === "saving"} onAdd={view.draft.addMaterial} />
+      <section className={styles.materialsSection} aria-labelledby="materials-title">
+        <div className={styles.materialsHeader}><div><h2 id="materials-title">Materiales asociados</h2><p>{view.draft.materials.length === 0 ? "Todavía no hay materiales asociados." : `${view.draft.materials.length} material${view.draft.materials.length === 1 ? "" : "es"} asociados.`}</p></div><Badge tone="neutral">{view.draft.mode === "existing" ? "Reutilizable · asociado" : "Nuevo · borrador"}</Badge></div>
+        <MaterialList materials={view.draft.materials} disabled={!canEdit || view.draft.saveState === "saving"} onRemove={view.draft.removeMaterial} onMove={view.draft.reorderMaterial} />
+        <p className={styles.continueHint}>La evaluación usará esta asociación en la etapa de objetivos; los materiales siguen perteneciendo al conjunto reutilizable.</p>
+      </section>
+    </div>
+  </AuthoringStageLayout></AppShell>;
 }
 
 export function ContentSetFutureRoute() {
