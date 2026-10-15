@@ -19,12 +19,20 @@ export const localContentSetDataSource: ContentSetDataSource = {
     } catch { return emptyContentSet(); }
   },
   async listMaterialFixtures() { return DEMO_MATERIALS.map((material) => ({ ...material })); },
-  async getAssociatedContentSetId() {
-    if (!canUseStorage()) return undefined;
-    return window.localStorage.getItem(CONTENT_SET_ASSOCIATION_STORAGE_KEY) ?? undefined;
+  async getAssociatedContentSetIds() {
+    if (!canUseStorage()) return [];
+    const raw = window.localStorage.getItem(CONTENT_SET_ASSOCIATION_STORAGE_KEY);
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter((id): id is string => typeof id === "string");
+      return typeof parsed === "string" ? [parsed] : [];
+    } catch {
+      return raw ? [raw] : [];
+    }
   },
-  async saveAssociation(contentSetId) {
-    if (canUseStorage()) window.localStorage.setItem(CONTENT_SET_ASSOCIATION_STORAGE_KEY, contentSetId);
+  async saveAssociation(contentSetIds) {
+    if (canUseStorage()) window.localStorage.setItem(CONTENT_SET_ASSOCIATION_STORAGE_KEY, JSON.stringify(contentSetIds));
   },
   async listReusableContentSets() {
     const demoSets = DEMO_CONTENT_SETS.map((contentSet) => ({ ...contentSet, materials: contentSet.materials.map((material) => ({ ...material })) }));
