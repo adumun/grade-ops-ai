@@ -41,8 +41,8 @@
 .circle { border-radius: var(--radius-pill); }
 
 .spinner {
-  width: calc(var(--icon-button-icon-size) * .75);
-  height: calc(var(--icon-button-icon-size) * .75);
+  width: calc(var(--icon-button-icon-size) - 4px);
+  height: calc(var(--icon-button-icon-size) - 4px);
   border: 2px solid currentColor;
   border-right-color: transparent;
   border-radius: 50%;
