@@ -1,6 +1,6 @@
 import type { ContentSet } from "../domain/types";
 import type { ContentSetDataSource } from "./contentSetDataSource";
-import { CONTENT_SET_ID, CONTENT_SET_STORAGE_KEY, CONTENT_SET_UPDATED_AT, DEMO_MATERIALS } from "./fixtureContentSetDataSource";
+import { CONTENT_SET_ID, CONTENT_SET_STORAGE_KEY, CONTENT_SET_UPDATED_AT, DEMO_CONTENT_SETS, DEMO_MATERIALS } from "./fixtureContentSetDataSource";
 
 function canUseStorage() { return typeof window !== "undefined" && Boolean(window.localStorage); }
 
@@ -19,6 +19,17 @@ export const localContentSetDataSource: ContentSetDataSource = {
     } catch { return emptyContentSet(); }
   },
   async listMaterialFixtures() { return DEMO_MATERIALS.map((material) => ({ ...material })); },
+  async listReusableContentSets() {
+    const demoSets = DEMO_CONTENT_SETS.map((contentSet) => ({ ...contentSet, materials: contentSet.materials.map((material) => ({ ...material })) }));
+    if (!canUseStorage()) return demoSets;
+    const raw = window.localStorage.getItem(CONTENT_SET_STORAGE_KEY);
+    if (!raw) return demoSets;
+    try {
+      const saved = JSON.parse(raw) as ContentSet;
+      if (!saved?.name?.trim() || !Array.isArray(saved.materials)) return demoSets;
+      return [saved, ...demoSets.filter((contentSet) => contentSet.id !== saved.id)];
+    } catch { return demoSets; }
+  },
   async saveContentSet(values, materials, existingId = CONTENT_SET_ID) {
     const contentSet: ContentSet = { id: existingId, name: values.name.trim(), description: values.description.trim(), materials, status: "draft", updatedAt: CONTENT_SET_UPDATED_AT };
     if (canUseStorage()) window.localStorage.setItem(CONTENT_SET_STORAGE_KEY, JSON.stringify(contentSet));
