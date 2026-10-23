@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useDemoState } from "@/components/shell/ShellContext";
 import { localObjectiveDataSource } from "../data/localObjectiveDataSource";
+import { createLocalId } from "../domain/localIdentity";
 import { createObjective, toObjectiveValues, validateObjective } from "../domain/objectiveRules";
 import type { Objective, ObjectiveSet, ObjectiveValues } from "../domain/types";
 
@@ -26,7 +27,7 @@ export function useObjectiveSet(initial: ObjectiveSet | undefined, simulateSaveE
   const cancelEdit = () => { setEditingId(null); setValues(toObjectiveValues()); };
   const commitObjective = () => {
     if (!validation.isReady) return false;
-    setObjectives((current) => editingId ? current.map((objective) => objective.id === editingId ? createObjective(objective.id, values, objective.source, objective.source === "demo-ai" ? "edited" : objective.aiDecision) : objective) : [...current, createObjective(`objective-local-manual-${current.length + 1}`, values)]);
+    setObjectives((current) => editingId ? current.map((objective) => objective.id === editingId ? createObjective(objective.id, values, objective.source, objective.source === "demo-ai" ? "edited" : objective.aiDecision) : objective) : [...current, createObjective(createLocalId("objective-local-manual"), values)]);
     cancelEdit();
     return true;
   };

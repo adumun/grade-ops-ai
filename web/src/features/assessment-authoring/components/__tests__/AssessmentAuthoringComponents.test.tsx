@@ -29,12 +29,12 @@ describe("assessment authoring components", () => {
 
   it("disables editing and actions while saving, and exposes retry on error", () => {
     const onRetry = jest.fn();
-    const { unmount } = render(<AssessmentPurposeSection values={{ title: "Evaluación", topic: "Funciones", purpose: "Propósito" }} validation={{ errors: {}, warnings: [], isReady: true }} canEdit saveState="saving" onChange={jest.fn()} onSave={jest.fn()} onRetry={onRetry} onCancel={jest.fn()} />);
+    const { unmount } = render(<AssessmentPurposeSection values={{ title: "Evaluación", topic: "Funciones", purpose: "Propósito" }} validation={{ errors: {}, warnings: [], isReady: true }} validationRequested={false} canEdit saveState="saving" onChange={jest.fn()} onSave={jest.fn()} onRetry={onRetry} onCancel={jest.fn()} />);
     expect(screen.getByRole("textbox", { name: /^Título/ })).toBeDisabled();
     expect(screen.getByRole("button", { name: /guardar borrador/i })).toBeDisabled();
     unmount();
 
-    render(<AssessmentPurposeSection values={{ title: "Evaluación", topic: "Funciones", purpose: "Propósito" }} validation={{ errors: {}, warnings: [], isReady: true }} canEdit saveState="error" onChange={jest.fn()} onSave={jest.fn()} onRetry={onRetry} onCancel={jest.fn()} />);
+    render(<AssessmentPurposeSection values={{ title: "Evaluación", topic: "Funciones", purpose: "Propósito" }} validation={{ errors: {}, warnings: [], isReady: true }} validationRequested={false} canEdit saveState="error" onChange={jest.fn()} onSave={jest.fn()} onRetry={onRetry} onCancel={jest.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });

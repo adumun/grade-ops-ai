@@ -58,12 +58,12 @@ export default function ContentSetLibrary({ contentSets, selectedIds, canEdit, o
 
       <div className={styles.libraryList} role="list" aria-label="Contenidos reutilizables disponibles">
         {visibleContentSets.length === 0 ? (
-          <div className={styles.libraryEmpty} role="status"><LucideIcon name="search-x" size={24} /><strong>No encontramos contenidos</strong><p>Prueba con otro término o crea un contenido nuevo.</p></div>
+          <div className={styles.libraryEmpty} role="status"><LucideIcon name="search" size={24} /><strong>No encontramos contenidos</strong><p>Prueba con otro término o crea un contenido nuevo.</p></div>
         ) : visibleContentSets.map((contentSet) => {
           const isSelected = selectedIds.includes(contentSet.id);
           return (
             <button key={contentSet.id} type="button" className={styles.libraryItem} data-selected={isSelected} aria-pressed={isSelected} disabled={!canEdit} onClick={() => onSelect(contentSet.id)}>
-              <span className={styles.libraryCheckbox} aria-hidden="true">{isSelected && <LucideIcon name="check" size={14} />}</span>
+              <span className={styles.libraryCheckbox} aria-hidden="true">{isSelected && <LucideIcon name="clipboard-check" size={14} />}</span>
               <span className={styles.libraryItemBody}><strong>{contentSet.name}</strong><span>{contentSet.materials.length} material{contentSet.materials.length === 1 ? "" : "es"} · Contenido reutilizable</span>{contentSet.description && <small>{contentSet.description}</small>}</span>
               <span className={styles.libraryItemAction}>{isSelected ? "Seleccionado" : "Seleccionar"}</span>
             </button>

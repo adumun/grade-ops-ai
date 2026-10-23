@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/shell/AppShell";
-import Badge from "@/components/ds/Badge";
 import Button from "@/components/ds/Button";
 import LucideIcon from "@/components/ds/LucideIcon";
 import Page from "@/components/shell/Page";
@@ -62,7 +61,7 @@ export default function ContentSetPage({ access = "editable", simulateSaveError 
           <div><span>Contenidos</span><strong>{linkedSets.length}</strong></div>
           <div><span>Materiales</span><strong>{materialCount}</strong></div>
         </div>
-        {linkedSets.length > 0 ? <p className={styles.summaryReady}><LucideIcon name="check-circle" size={16} /> La selección está lista para guardar.</p> : <p className={styles.summaryPending}><LucideIcon name="info" size={16} /> Vincula al menos un contenido para continuar.</p>}
+        {linkedSets.length > 0 ? <p className={styles.summaryReady}><LucideIcon name="clipboard-check" size={16} /> La selección está lista para guardar.</p> : <p className={styles.summaryPending}><LucideIcon name="alert-triangle" size={16} /> Vincula al menos un contenido para continuar.</p>}
         <p className={styles.summaryNote}>Los contenidos son reutilizables y no se duplican al asociarlos.</p>
       </aside>
     </div>

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useDemoState } from "@/components/shell/ShellContext";
 import { localContentSetDataSource } from "../data/localContentSetDataSource";
-import { validateContentSet } from "../domain/contentSetRules";
+import { createLocalId } from "../domain/localIdentity";
 import type { ContentSet, ContentSetValues, Material } from "../domain/types";
 
 export type ContentSetSaveState = "idle" | "saving" | "saved" | "error";
@@ -79,7 +79,7 @@ export function useContentSetDraft(
   };
 
   const createNewContentSet = ({ name, description, materialIds }: NewContentValues) => {
-    const id = `new-content-${Date.now()}`;
+    const id = createLocalId("new-content");
     const newContentSet: ContentSet = {
       id,
       name,

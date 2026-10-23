@@ -295,4 +295,33 @@ docker run -p 3000:3000 grade-ops-web
 
 ---
 
-[← README del repositorio](../README.md) · [↑ Volver al inicio](#top)
+[← README del repositorio](../README.md) · [Next →](src/features/assessment-authoring/README.md) · [↑ Volver al inicio](#top)
+
+## Local authoring recovery — Issue #115
+
+The authoring preview now preserves multiple ContentSets and saved rubric copies locally. Existing single-object localStorage data remains readable and is upgraded on the next successful save; reset remains explicit. New objectives, criteria, levels and local resources receive IDs independent of array positions. Editing preserves existing IDs and links.
+
+See the [authoring index](src/features/assessment-authoring/README.md), [persistence regressions](src/features/assessment-authoring/data/__tests__/README.md) and [identity regressions](src/features/assessment-authoring/hooks/__tests__/README.md). The corrective slice belongs to WEBUI-007/009; it does not close those parent Work Items or redefine WEBUI-004.
+
+Jest and jest-dom matcher types participate in `make typecheck`; tests are not excluded to obtain a passing build. Browser/visual validation remains separate from deterministic Web gates. Backend integration, infrastructure and pending product UX decisions remain outside this repair.
+
+## Direct configuration files
+
+| File | Purpose |
+| --- | --- |
+| [.dockerignore](.dockerignore) | Web configuration; inspect before changing its execution scope. |
+| [.env.local.example](.env.local.example) | Web configuration; inspect before changing its execution scope. |
+| [.gitignore](.gitignore) | Web configuration; inspect before changing its execution scope. |
+| [Dockerfile](Dockerfile) | Web container build. |
+| [apphosting.yaml](apphosting.yaml) | Web configuration; inspect before changing its execution scope. |
+| [eslint.config.mjs](eslint.config.mjs) | Web lint rules. |
+| [jest.config.ts](jest.config.ts) | Deterministic unit/component test configuration. |
+| [next.config.ts](next.config.ts) | Next.js output, headers and API routing. |
+| [package-lock.json](package-lock.json) | Reproducible dependency graph. |
+| [package.json](package.json) | Web dependency manifest and commands. |
+| [playwright.config.ts](playwright.config.ts) | Integrated browser test configuration. |
+| [playwright.preview.config.ts](playwright.preview.config.ts) | Five-viewport isolated preview browser checks. |
+| [postcss.config.mjs](postcss.config.mjs) | CSS processing. |
+| [tsconfig.json](tsconfig.json) | TypeScript checking, including Jest matcher types. |
+
+[← Parent](../README.md) · [Next →](src/features/assessment-authoring/README.md) · [↑ Top](#top)
