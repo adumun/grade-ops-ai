@@ -14,7 +14,7 @@ interface Props {
 const { title, description, lang, path } = Astro.props;
 const base = import.meta.env.BASE_URL;
 const langSeg = lang === 'en' ? '/en' : '';
-const canonicalUrl = `https://cmartinezs.github.io${base}${langSeg}${path === '/' ? '' : path}`;
+const canonicalUrl = `https://adumun.github.io${base}${langSeg}${path === '/' ? '' : path}`;
 ---
 
 <!doctype html>
@@ -31,7 +31,7 @@ const canonicalUrl = `https://cmartinezs.github.io${base}${langSeg}${path === '/
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content={`https://cmartinezs.github.io${base}/og-image.png`} />
+    <meta property="og:image" content={`https://adumun.github.io${base}/og-image.png`} />
     <meta name="twitter:card" content="summary_large_image" />
 
     <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
