@@ -34,6 +34,8 @@ SUBMITTED EVIDENCE
 OMITTED FILES
 The following text files were not included because the evidence context budget was reached:
 <omittedFilePaths; separator="\n">
+Partially included files (only complete lines up to the evidence budget are present):
+<truncatedFilePaths; separator="\\n">
 Evidence truncated: <evidenceTruncated>
 
 When evidence is truncated, explicitly state that limitation in uncertaintySummary, do not infer content from omitted files, and lower confidence where the missing files could affect a criterion.
