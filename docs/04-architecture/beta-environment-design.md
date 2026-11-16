@@ -1,5 +1,9 @@
 # Beta Environment Design
 
+> **Architecture update — 16 November 2026:** This document records the original June 2026 two-service proposal. For the current P0 teacher demo, its separate `api` and `agents` deployments, `AGENTS_BASE_URL`, and shared API/agent secret are superseded by [ADR-018 — P0 modular monolith](../99-decisions/2026-11-16-p0-teacher-demo-modular-monolith.md). The current beta and demo topology has one Spring Boot API deployable; `agents/` is an in-process Maven capability module. The historical design rationale below is retained, but follow ADR-018 for current implementation and operations.
+
+---
+
 **Date:** 2026-06-16
 **Status:** Approved
 **Scope:** Free-tier deployment environment for GradeOps AI with full provider abstraction
@@ -21,12 +25,12 @@ The two environments share 100% of application code. What changes is which infra
 ```
 Browser
   └── Vercel (Next.js)
-        └── Render — grade-ops-ai-api (Spring Boot 4.1.0 native image)
-              ├── Neon (serverless PostgreSQL — same Flyway migrations, no changes)
-              ├── Cloudflare R2 (Storage — S3-compatible API)
-              ├── Firebase Authentication (free, shared with Demo)
-              └── Render — grade-ops-ai-agents (Spring Boot 4.1.0 native image, internal)
-                    └── Google AI Studio OR OpenAI-compatible provider (Groq, Together AI, etc.)
+        └── Render — grade-ops-ai-api (single Spring Boot 4 / Java 21 deployable)
+              ├── Neon (serverless PostgreSQL — Flyway migrations)
+              ├── Cloudflare R2 (S3-compatible storage)
+              ├── Firebase Authentication
+              └── In-process agents/ capability module
+                    └── Google AI Studio or OpenAI-compatible provider (Groq, etc.)
 ```
 
 ### Demo (GCP)
@@ -34,12 +38,12 @@ Browser
 ```
 Browser
   └── Firebase App Hosting (Next.js)
-        └── Cloud Run — grade-ops-ai-api (Spring Boot 4.1.0 native image)
+        └── Cloud Run — grade-ops-ai-api (single Spring Boot 4 / Java 21 deployable)
               ├── Cloud SQL PostgreSQL
               ├── Cloud Storage (GCS)
               ├── Firebase Authentication
-              └── Cloud Run — grade-ops-ai-agents (internal)
-                    └── Vertex AI Gemini
+              └── In-process agents/ capability module
+                    └── Vertex AI Gemini or configured provider
 ```
 
 Application code is identical. Spring profile selection activates the correct adapter implementations.
@@ -80,7 +84,7 @@ interface StoragePort {
 
 Cloudflare R2 implements the S3 API. `R2StorageAdapter` points the AWS S3 SDK to `https://<account_id>.r2.cloudflarestorage.com`. No R2-specific SDK required.
 
-### AI — `agents/`
+### AI — in-process `agents/` capability module
 
 Spring AI's `ChatClient` is the port. No custom interface is needed — Spring AI already provides the abstraction. The active provider is determined by the Maven dependency and Spring configuration.
 
@@ -117,7 +121,7 @@ Both providers can be configured in the same profile. During migration, `app.age
 
 ## Native Compilation
 
-Both `api/` and `agents/` are compiled to native binaries using GraalVM via the `native` Maven profile.
+Only `api/` is a deployable application. The `agents/` module is compiled into the API artifact; it is not built or deployed as a separate native binary.
 
 **Build command:**
 ```bash
@@ -132,7 +136,7 @@ Both `api/` and `agents/` are compiled to native binaries using GraalVM via the 
 | Idle RAM | ~300–400MB | ~60–120MB |
 | Docker image size | ~400MB | ~80–120MB |
 
-Render free tier provides 512MB RAM per service — sufficient for both services as native images.
+Render free tier provides 512MB RAM for the single API service; validate memory with both provider libraries on the classpath.
 
 **Reflection hints required for native:**
 
@@ -140,7 +144,7 @@ Render free tier provides 512MB RAM per service — sufficient for both services
 2. **Spring AI starters** — recent versions include their own native hints. Verify at build time; add hints if missing.
 3. **PostgreSQL JDBC driver** — native-compatible since version 42.6+. No additional config needed.
 
-Native hints are maintained in `api/src/main/resources/META-INF/native-image/` and `agents/src/main/resources/META-INF/native-image/`.
+Native hints, if native compilation is adopted, are maintained for the single API artifact. Native compilation is not a P0 prerequisite.
 
 ---
 
@@ -155,9 +159,9 @@ All services are configured manually (no Terraform). Each requires only a free-t
 - Deploy on push to `main`
 - Environment variables: same `NEXT_PUBLIC_FIREBASE_*` keys as Demo
 
-### Render — API and Agents
+### Render — API
 
-Two separate Web Services. Agents is configured as an Internal Service (not publicly reachable).
+One Web Service. The agent capability module is packaged into the API and is not separately addressable.
 
 - Runtime: Docker
 - Plan: Free
@@ -205,19 +209,7 @@ R2_SECRET_KEY=<r2 secret access key>
 R2_BUCKET=gradeops-beta
 FIREBASE_ADMIN_CREDENTIALS=<service account JSON, inline>
 INTERNAL_API_SECRET=<shared secret with agents>
-AGENTS_BASE_URL=<render internal URL for agents service>
 CORS_ALLOWED_ORIGINS=https://<vercel-app>.vercel.app
-```
-
-### Render — Agents (`SPRING_PROFILES_ACTIVE=beta`)
-
-```
-SPRING_PROFILES_ACTIVE=beta
-GRADEOPS_GEMINI_API_KEY=<google ai studio api key>
-GRADEOPS_GEMINI_MODEL=<model name from ai.google.dev>
-GRADEOPS_GROQ_API_KEY=<groq api key>
-GRADEOPS_GROQ_MODEL=<model name from console.groq.com, e.g. llama-3.3-70b-versatile>
-INTERNAL_API_SECRET=<same shared secret as api>
 ```
 
 ### Vercel — Web
@@ -228,7 +220,6 @@ NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=gen-lang-client-0898391452
 NEXT_PUBLIC_FIREBASE_APP_ID=...
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-NEXT_PUBLIC_API_BASE_URL=https://<render-api-service>.onrender.com
 ```
 
 ---
@@ -237,7 +228,7 @@ NEXT_PUBLIC_API_BASE_URL=https://<render-api-service>.onrender.com
 
 - All Java application code
 - All Flyway migration scripts
-- All Spring AI `ChatClient` usage in `agents/`
+- All Spring AI `ChatClient` usage in the in-process `agents/` module
 - Firebase Authentication SDK usage in `api/`
 - All API contracts and DTOs
 - All prompt templates in `agents/src/main/resources/prompts/`
