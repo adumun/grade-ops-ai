@@ -118,14 +118,16 @@ The `firebase.credentials-path` property is read by `FirebaseConfig`. No environ
 
 **Note:** In Cloud Run (the production environment) `credentials-path` is left blank and the service account assigned to the Cloud Run service provides credentials automatically via Application Default Credentials, provided it has the `roles/firebaseauth.admin` IAM role.
 
-### 2d. Start the API
+### 2d. Start the single backend application
+
+From the repository root, start the API and its in-process AI capability module together:
 
 ```bash
-cd api/
-./mvnw spring-boot:run -Dspring.profiles.active=local
+docker compose up -d db
+./api/mvnw -f pom.xml -pl api -am -Pbeta spring-boot:run
 ```
 
-Spring Boot detects `compose.yml` and starts the PostgreSQL container before booting the application. Expected output (last few lines):
+Set `FIREBASE_ADMIN_CREDENTIALS`, `GRADEOPS_GROQ_API_KEY` and optionally `GRADEOPS_GEMINI_API_KEY` in the shell first. The `beta` profile enables the in-process Spring AI capabilities. There is no separate agents service or port 8081. Expected output (last few lines):
 
 ```
 Started GradeOpsApiApplication in 3.4 seconds (process running for 3.8)
@@ -192,7 +194,7 @@ cd web/
 npm install
 ```
 
-Expected: resolves and installs packages with no errors. The key runtime dependencies are Next.js 15.3.0, React 19.1.0, and Firebase 11.x.
+Expected: resolves and installs packages with no errors. Use Node.js 22.12 or newer; the key runtime dependencies are Next.js 15.5, React 19.1, and Firebase 11.x.
 
 ### 3b. Create `.env.local`
 
@@ -293,6 +295,10 @@ Expected response: a JSON array of the authenticated teacher's assessments. A ne
 | `DATABASE_PASSWORD` | PostgreSQL password | Terraform / defaults | Cloud Run only |
 | `INTERNAL_API_SECRET` | Shared secret for `X-Internal-Key` header | Secret Manager (Cloud Run) / `application-local.yml` | Yes |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins | Terraform / `application-local.yml` | Cloud Run only |
+| `GRADEOPS_AI_ENABLED` | Enables the in-process Spring AI capability module (`beta`/`demo` default true) | Spring profile / environment | Optional |
+| `GRADEOPS_DEFAULT_PROVIDER` | Default provider (`groq` or `gemini`) | Environment | Optional |
+| `GRADEOPS_GROQ_API_KEY`, `GRADEOPS_GEMINI_API_KEY` | Server-side provider credentials | Secret Manager / shell | Required when AI is enabled |
+| `GRADEOPS_MAX_ARCHIVE_BYTES` | Maximum compressed ZIP upload size | Environment | Optional (25 MB default) |
 
 For local dev, all database and CORS settings are in `application-local.yml`. The `firebase.credentials-path` property in that file replaces the `GOOGLE_APPLICATION_CREDENTIALS` environment variable.
 
