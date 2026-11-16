@@ -178,6 +178,8 @@ public class GradingAgentOrchestrator {
             template.add("totalPoints", command.totalPoints());
             template.add("rubricJson", jsonMapper.writeValueAsString(command.criteria()));
             template.add("evidenceBundle", buildEvidenceBundle(command.files()));
+            template.add("omittedFilePaths", command.omittedFilePaths() == null ? List.of() : command.omittedFilePaths());
+            template.add("evidenceTruncated", command.evidenceTruncated());
             return template.render();
         } catch (Exception exception) {
             throw new IllegalStateException("Could not render grading prompt", exception);
@@ -240,7 +242,12 @@ public class GradingAgentOrchestrator {
         if (totalSuggested.compareTo(command.totalPoints()) > 0) {
             throw new IllegalArgumentException("Suggested scores exceed the rubric total");
         }
-        return new GradingResult(result.criteria(), result.overallFeedback(), result.uncertaintySummary(),
+        String uncertaintySummary = result.uncertaintySummary();
+        if (command.evidenceTruncated()) {
+            reviewFlags.add("EVIDENCE_TRUNCATED");
+            uncertaintySummary += " Some submitted text files were omitted to respect the evidence context limit.";
+        }
+        return new GradingResult(result.criteria(), result.overallFeedback(), uncertaintySummary,
                 reviewFlags.stream().distinct().toList());
     }
 
