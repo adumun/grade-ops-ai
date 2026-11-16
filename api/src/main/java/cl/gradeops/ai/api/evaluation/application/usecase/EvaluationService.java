@@ -127,8 +127,8 @@ public class EvaluationService {
 
     public byte[] exportApprovedResultsCsv(UUID assessmentId, String teacherUid) {
         List<GradingReviewView> reviews = repository.listApprovedReviews(assessmentId, teacherUid);
-        StringBuilder csv = new StringBuilder("\\uFEFF");
-        csv.append("learner_label,submission_id,criterion_name,max_points,final_points,rationale,evidence,uncertainty,confidence,overall_feedback,teacher_comment,approved_by,approved_at,provider,model,prompt_version\\r\\n");
+        StringBuilder csv = new StringBuilder().append((char) 0xFEFF);
+        csv.append("learner_label,submission_id,criterion_name,max_points,final_points,rationale,evidence,uncertainty,confidence,overall_feedback,teacher_comment,approved_by,approved_at,provider,model,prompt_version\r\n");
         for (GradingReviewView review : reviews) {
             if (review.editedResult() == null || review.editedResult().criteria() == null) {
                 continue;
@@ -155,7 +155,7 @@ public class EvaluationService {
                         .append(csv(execution == null ? "" : execution.provider())).append(',')
                         .append(csv(execution == null ? "" : execution.model())).append(',')
                         .append(csv(execution == null ? "" : execution.promptVersion()))
-                        .append("\\r\\n");
+                        .append("\r\n");
             }
         }
         return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
