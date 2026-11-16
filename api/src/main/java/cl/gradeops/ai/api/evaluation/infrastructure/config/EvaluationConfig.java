@@ -1,6 +1,9 @@
 package cl.gradeops.ai.api.evaluation.infrastructure.config;
 
 import cl.gradeops.ai.api.evaluation.application.port.out.EvaluationRepositoryPort;
+import cl.gradeops.ai.api.evaluation.application.port.out.GradingAgentPort;
+import cl.gradeops.ai.api.evaluation.infrastructure.adapter.out.ai.SpringAiGradingAgentAdapter;
+import cl.gradeops.ai.agents.grading.application.port.in.GradeSubmissionUseCase;
 import cl.gradeops.ai.api.evaluation.application.port.out.SubmissionArchiveIntakePort;
 import cl.gradeops.ai.api.evaluation.application.usecase.EvaluationService;
 import cl.gradeops.ai.api.evaluation.infrastructure.adapter.out.persistence.JdbcEvaluationRepositoryAdapter;
@@ -28,10 +31,16 @@ class EvaluationConfig {
     }
 
     @Bean
+    GradingAgentPort gradingAgentPort(GradeSubmissionUseCase gradeSubmissionUseCase) {
+        return new SpringAiGradingAgentAdapter(gradeSubmissionUseCase);
+    }
+
+    @Bean
     EvaluationService evaluationService(
             EvaluationRepositoryPort repository,
             SubmissionArchiveIntakePort archiveIntake,
+            GradingAgentPort gradingAgent,
             @Value("${app.submissions.max-archive-bytes:26214400}") long maxArchiveBytes) {
-        return new EvaluationService(repository, archiveIntake, maxArchiveBytes);
+        return new EvaluationService(repository, archiveIntake, gradingAgent, maxArchiveBytes);
     }
 }
