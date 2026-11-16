@@ -141,11 +141,33 @@ public class ZipSubmissionIntake implements SubmissionArchiveIntakePort {
             throw new IllegalArgumentException("The ZIP archive contains no files");
         }
 
+        List<String> projectDirectories = grouped.keySet().stream()
+                .filter(key -> !key.equals("__single__"))
+                .toList();
+        if (projectDirectories.size() == 1 && grouped.containsKey("__single__")) {
+            String projectDirectory = projectDirectories.getFirst();
+            List<SubmissionFileEvidence> merged = new ArrayList<>(grouped.get(projectDirectory));
+            merged.addAll(grouped.get("__single__"));
+            grouped.put(projectDirectory, merged);
+            grouped.remove("__single__");
+        } else if (projectDirectories.size() > 1 && grouped.containsKey("__single__")) {
+            List<SubmissionFileEvidence> sharedFiles = grouped.remove("__single__");
+            for (String projectDirectory : projectDirectories) {
+                List<SubmissionFileEvidence> projectFiles = new ArrayList<>(grouped.get(projectDirectory));
+                sharedFiles.stream()
+                        .map(file -> new SubmissionFileEvidence(
+                                "__shared__/" + file.path(), file.mediaType(), file.sizeBytes(),
+                                file.sha256(), file.classification(), file.extractedText()))
+                        .forEach(projectFiles::add);
+                grouped.put(projectDirectory, projectFiles);
+            }
+        }
+
+        if (projectDirectories.isEmpty() && grouped.containsKey("__single__")) {
+            return List.of(new SubmissionCandidate("Entrega única", "__single__", grouped.get("__single__")));
+        }
         return grouped.entrySet().stream()
-                .map(entry -> new SubmissionCandidate(
-                        entry.getKey().equals("__single__") ? "Entrega única" : entry.getKey(),
-                        entry.getKey(),
-                        entry.getValue()))
+                .map(entry -> new SubmissionCandidate(entry.getKey(), entry.getKey(), entry.getValue()))
                 .toList();
     }
 
@@ -166,7 +188,7 @@ public class ZipSubmissionIntake implements SubmissionArchiveIntakePort {
             if (segment.equals(".") || segment.equals("..")) {
                 throw new IllegalArgumentException("ZIP contains an unsafe relative file path");
             }
-            if (segment.indexOf('\u0000') >= 0) {
+            if (segment.indexOf(0) >= 0) {
                 throw new IllegalArgumentException("ZIP contains an invalid file path");
             }
             segments.add(segment);
