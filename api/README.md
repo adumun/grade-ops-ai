@@ -194,17 +194,16 @@ createdb gradeops
 
 ### Local Development
 
-```bash
-./mvnw spring-boot:run
-# or with the local profile:
-./mvnw spring-boot:run -Dspring.profiles.active=local
-```
+There is one backend application. The `agents/` Maven module is built into it and must not be started as a separate process.
 
-The backend starts on **http://localhost:8080**. From the repository root, install the capability module and run the single API application:
+From the repository root, with PostgreSQL available and Firebase/provider environment variables configured:
 
 ```bash
+docker compose up -d db
 ./api/mvnw -f pom.xml -pl api -am -Pbeta spring-boot:run
 ```
+
+The backend starts on **http://localhost:8080**. The `beta` profile enables the in-process Spring AI capabilities; no `AGENTS_BASE_URL` or port 8081 is used.
 
 ---
 
@@ -212,13 +211,10 @@ The backend starts on **http://localhost:8080**. From the repository root, insta
 
 | Command | Description |
 |---------|-------------|
-| `./mvnw spring-boot:run` | Start the API server |
-| `./mvnw spring-boot:run -Dspring.profiles.active=local` | Start with local profile |
-| `./mvnw test` | Run the full test suite |
-| `./mvnw test -Dtest=ClassName` | Run a single test class |
-| `./mvnw test -Dtest=ClassName#methodName` | Run a single test method |
-| `./mvnw package -DskipTests` | Build the JAR |
-| `./mvnw flyway:migrate` | Run pending DB migrations manually |
+| `./api/mvnw -f pom.xml -pl api -am -Pbeta spring-boot:run` | Start the single backend application from repository root |
+| `./api/mvnw -f pom.xml -pl api -am -Pbeta test` | Test API and in-process agent modules |
+| `./api/mvnw -f pom.xml -pl agents -Pbeta test` | Test only the AI capability module |
+| `./api/mvnw -f pom.xml -pl api -am -Pbeta package -DskipTests` | Build the API artifact with its agent module |
 
 ---
 
