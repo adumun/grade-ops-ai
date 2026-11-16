@@ -729,7 +729,7 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
                         rs.getString("output_hash"),
                         (Integer) rs.getObject("estimated_input_tokens"),
                         (Integer) rs.getObject("estimated_output_tokens"),
-                        (Double) rs.getObject("cost_estimate"),
+                        rs.getBigDecimal("cost_estimate") == null ? null : rs.getBigDecimal("cost_estimate").doubleValue(),
                         rs.getString("execution_status"),
                         rs.getString("error_code"),
                         instant(rs.getTimestamp("started_at")),
