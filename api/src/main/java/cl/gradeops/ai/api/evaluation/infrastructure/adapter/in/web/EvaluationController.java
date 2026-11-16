@@ -65,6 +65,27 @@ public class EvaluationController {
         return evaluationService.listRubrics(assessmentId, teacher.uid());
     }
 
+    @PutMapping("/assessments/{assessmentId}/rubrics/{rubricId}")
+    public Object updateRubric(
+            @PathVariable UUID assessmentId,
+            @PathVariable UUID rubricId,
+            @AuthenticationPrincipal AuthenticatedTeacher teacher,
+            @Valid @RequestBody CreateRubricRequest request) {
+        List<RubricCriterion> criteria = request.criteria().stream()
+                .map(criterion -> new RubricCriterion(
+                        criterion.id() == null || criterion.id().isBlank() ? UUID.randomUUID().toString() : criterion.id(),
+                        criterion.name(),
+                        criterion.description(),
+                        criterion.maxPoints(),
+                        criterion.evidenceExpectations()))
+                .toList();
+        return evaluationService.updateRubricDraft(
+                assessmentId,
+                rubricId,
+                teacher.uid(),
+                new CreateRubricDraftCommand(request.title(), request.totalPoints(), criteria));
+    }
+
     @PostMapping("/assessments/{assessmentId}/rubrics/{rubricId}/approve")
     public Object approveRubric(
             @PathVariable UUID assessmentId,
@@ -88,11 +109,25 @@ public class EvaluationController {
                 file.getInputStream());
     }
 
+    @GetMapping("/assessments/{assessmentId}/submission-batches")
+    public Object listSubmissionBatches(
+            @PathVariable UUID assessmentId,
+            @AuthenticationPrincipal AuthenticatedTeacher teacher) {
+        return evaluationService.listSubmissionBatches(assessmentId, teacher.uid());
+    }
+
     @GetMapping("/submission-batches/{batchId}")
     public Object getSubmissionBatch(
             @PathVariable UUID batchId,
             @AuthenticationPrincipal AuthenticatedTeacher teacher) {
         return evaluationService.getSubmissionBatch(batchId, teacher.uid());
+    }
+
+    @GetMapping("/submissions/{submissionId}/latest-review")
+    public GradingReviewView getLatestGradingReview(
+            @PathVariable UUID submissionId,
+            @AuthenticationPrincipal AuthenticatedTeacher teacher) {
+        return evaluationService.getLatestGradingReview(submissionId, teacher.uid());
     }
 
     @PostMapping("/submissions/{submissionId}/grading-runs")
