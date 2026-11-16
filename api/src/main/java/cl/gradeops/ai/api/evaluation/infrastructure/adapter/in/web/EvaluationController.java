@@ -4,6 +4,8 @@ import cl.gradeops.ai.api.evaluation.application.command.CreateRubricDraftComman
 import cl.gradeops.ai.api.evaluation.application.model.RubricCriterion;
 import cl.gradeops.ai.api.evaluation.application.model.GradingProposal;
 import cl.gradeops.ai.api.evaluation.application.model.GradingReviewView;
+import cl.gradeops.ai.api.evaluation.application.model.RubricView;
+import cl.gradeops.ai.api.evaluation.application.model.SubmissionBatchView;
 import cl.gradeops.ai.api.evaluation.infrastructure.adapter.in.web.request.UpdateGradingReviewRequest;
 import cl.gradeops.ai.api.evaluation.application.usecase.EvaluationService;
 import cl.gradeops.ai.api.evaluation.infrastructure.adapter.in.web.request.CreateRubricRequest;
@@ -40,7 +42,7 @@ public class EvaluationController {
 
     @PostMapping("/assessments/{assessmentId}/rubrics")
     @ResponseStatus(HttpStatus.CREATED)
-    public Object createRubric(
+    public RubricView createRubric(
             @PathVariable UUID assessmentId,
             @AuthenticationPrincipal AuthenticatedTeacher teacher,
             @Valid @RequestBody CreateRubricRequest request) {
@@ -66,7 +68,7 @@ public class EvaluationController {
     }
 
     @PutMapping("/assessments/{assessmentId}/rubrics/{rubricId}")
-    public Object updateRubric(
+    public RubricView updateRubric(
             @PathVariable UUID assessmentId,
             @PathVariable UUID rubricId,
             @AuthenticationPrincipal AuthenticatedTeacher teacher,
@@ -110,7 +112,7 @@ public class EvaluationController {
     }
 
     @GetMapping("/assessments/{assessmentId}/submission-batches")
-    public Object listSubmissionBatches(
+    public List<SubmissionBatchView> listSubmissionBatches(
             @PathVariable UUID assessmentId,
             @AuthenticationPrincipal AuthenticatedTeacher teacher) {
         return evaluationService.listSubmissionBatches(assessmentId, teacher.uid());
