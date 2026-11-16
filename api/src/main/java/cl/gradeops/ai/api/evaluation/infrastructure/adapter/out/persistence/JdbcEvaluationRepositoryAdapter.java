@@ -235,6 +235,7 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
         List<SubmissionSummary> submissions = jdbc.query("""
                 SELECT s.id, s.learner_label, s.source_directory, s.status, s.file_count, s.text_file_count,
                        (SELECT gr.id FROM grading_runs gr
+                        JOIN grading_reviews review ON review.grading_run_id = gr.id
                         WHERE gr.submission_id = s.id
                         ORDER BY gr.started_at DESC LIMIT 1) AS latest_grading_run_id
                 FROM submissions s
@@ -552,6 +553,15 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
         if (!"DRAFT".equals(current.status()) || current.finalScore() == null) {
             throw new EvaluationConflictException("A teacher-edited grading result must be saved before approval");
         }
+        jdbc.update("""
+                UPDATE grading_reviews previous
+                SET status = 'SUPERSEDED', updated_at = now()
+                FROM grading_runs previous_run
+                WHERE previous.grading_run_id = previous_run.id
+                  AND previous_run.submission_id = ?
+                  AND previous.status = 'APPROVED'
+                  AND previous.grading_run_id <> ?
+                """, current.submissionId(), gradingRunId);
         int updated = jdbc.update("""
                 UPDATE grading_reviews
                 SET status = 'APPROVED', approved_by = ?, approved_at = now(), updated_at = now()
