@@ -45,7 +45,7 @@ This is a **monorepo**. Each subdirectory is a self-contained component of the p
 |-----------|-----------|-------|--------|
 | [`web/`](web/) | Teacher workspace (frontend) | Next.js 15 · TypeScript · Tailwind CSS · Firebase Auth | [web/README.md](web/README.md) |
 | [`api/`](api/) | Domain API (backend) | Spring Boot 4 · Java 21 · PostgreSQL · Flyway | [api/README.md](api/README.md) |
-| [`agents/`](agents/) | Agent runtime | Spring Boot 4 · Java 21 · Spring AI · Vertex AI Gemini | [agents/README.md](agents/README.md) |
+| [`agents/`](agents/) | Internal AI capability module (not a separate service) | Spring AI · typed agent contracts · provider adapters | [agents/README.md](agents/README.md) |
 | [`infra/`](infra/) | Cloud infrastructure | Terraform · Google Cloud Run · Cloud SQL · Secret Manager | [infra/README.md](infra/README.md) |
 | [`docs/`](docs/) | Product and architecture documentation | Markdown | [docs/README.md](docs/README.md) |
 | [`design-system/`](design-system/) | UI/UX governance and design workflow | Markdown · Figma workflow · WCAG 2.2 AA | [design-system/README.md](design-system/README.md) |
@@ -73,9 +73,8 @@ graph TD
     end
 
     Browser -->|"Bearer firebase_id_token"| Web
-    Web -->|"Bearer firebase_id_token"| API
-    API -->|"internal OIDC"| Agents
-    Agents --> Gemini
+    Web -->|"Bearer firebase_id_token"| Backend
+    API --> Gemini
     API --> SQL
     API --> GCS
     API --> SM
@@ -83,7 +82,7 @@ graph TD
 
 - **`web/`** owns the teacher UI and student access pages. It holds no business logic.
 - **`api/`** owns all domain state, workflow rules, persistence, and billing. It is the single source of truth.
-- **`agents/`** exposes an internal REST API. Each agent receives a command, calls Gemini, and returns a structured result. Agents persist nothing directly.
+- **`agents/`** is compiled into the API backend as an internal capability module. It receives typed commands, calls configured providers through Spring AI and returns structured results plus execution evidence. It has no independent deployment or domain persistence.
 - **`infra/`** provisions all Google Cloud resources via Terraform. The `demo` environment is the primary hackathon target.
 
 ---
@@ -127,17 +126,15 @@ require browser infrastructure, services, credentials, and/or real data.
 docker compose up -d        # local PostgreSQL + any auxiliary containers
 ```
 
-Then in separate terminals:
+Then start the backend and web workspace:
 
 ```bash
-# API
-cd api && ./mvnw spring-boot:run -Dspring.profiles.active=local
-
-# Agents
-cd agents && ./mvnw spring-boot:run -Dspring.profiles.active=local
+# Build the agent module and start the single backend process
+./api/mvnw -f pom.xml -pl agents -Pbeta install -DskipTests
+./api/mvnw -f api/pom.xml -Pbeta spring-boot:run
 
 # Web
-cd web && npm install && npm run dev
+cd web && npm ci && npm run dev
 ```
 
 The teacher workspace is available at `http://localhost:3000`.
@@ -146,8 +143,8 @@ The teacher workspace is available at `http://localhost:3000`.
 
 Each component reads its configuration from `application-local.yml` (Java) or `.env.local` (Next.js). See the component READMEs for the full variable list.
 
-- `api/` — database URL, Firebase Admin secret, internal secret header
-- `agents/` — Gemini API key, internal secret header, `api/` base URL
+- `api/` — database URL, Firebase Admin credentials, internal secret, provider API keys/model selection and CORS
+- `agents/` — no standalone runtime configuration; provider settings are owned by the backend application
 - `web/` — Firebase public config (`NEXT_PUBLIC_FIREBASE_*`)
 
 ---
