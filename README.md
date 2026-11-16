@@ -60,30 +60,33 @@ graph TD
     Browser["Browser"]
 
     subgraph "Google Cloud Run"
-        Web["web/\nNext.js 15"]
-        API["api/\nSpring Boot 4"]
-        Agents["agents/\nSpring Boot 4 + Spring AI"]
+        Web["web/ · Next.js"]
+        subgraph Backend["Single backend deployable · Spring Boot 4 / Java 21"]
+            API["api/ · domain, workflows, persistence"]
+            Agents["agents/ · in-process Spring AI capabilities"]
+            API -->|"typed application port"| Agents
+        end
     end
 
     subgraph "Google Cloud"
-        SQL["Cloud SQL\nPostgreSQL 15"]
-        GCS["Cloud Storage\nsubmission files"]
-        SM["Secret Manager\ncredentials"]
-        Gemini["Vertex AI Gemini"]
+        SQL["Cloud SQL · PostgreSQL"]
+        GCS["Cloud Storage · submissions"]
+        SM["Secret Manager · credentials"]
+        Gemini["Vertex AI / configured model provider"]
     end
 
-    Browser -->|"Bearer firebase_id_token"| Web
-    Web -->|"Bearer firebase_id_token"| Backend
-    API --> Gemini
+    Browser --> Web
+    Web -->|"Bearer Firebase ID token"| API
     API --> SQL
     API --> GCS
     API --> SM
+    Agents --> Gemini
 ```
 
 - **`web/`** owns the teacher UI and student access pages. It holds no business logic.
-- **`api/`** owns all domain state, workflow rules, persistence, and billing. It is the single source of truth.
-- **`agents/`** is compiled into the API backend as an internal capability module. It receives typed commands, calls configured providers through Spring AI and returns structured results plus execution evidence. It has no independent deployment or domain persistence.
-- **`infra/`** provisions all Google Cloud resources via Terraform. The `demo` environment is the primary hackathon target.
+- **`api/`** is the only backend application and owns domain state, workflow rules, persistence, authorization and approval.
+- **`agents/`** is compiled into the API backend as an internal capability module. It returns typed proposals and execution evidence; it has no independent deployment or domain persistence.
+- **`infra/`** provisions cloud resources via Terraform. The P0 backend is deployed as one Cloud Run service.
 
 ---
 
