@@ -32,17 +32,27 @@ public class SpringAiGradingAgentAdapter implements GradingAgentPort {
     @Override
     public GradingAgentResult grade(GradingContext context) {
         Instant startedAt = Instant.now();
-        List<SubmissionFile> files = context.files().stream()
-                .filter(file -> "TEXT".equals(file.classification()))
-                .map(file -> new SubmissionFile(file.path(), file.extractedText()))
-                .toList();
+        int evidenceBudget = 80_000;
+        List<SubmissionFile> files = new java.util.ArrayList<>();
+        List<String> omittedFilePaths = new java.util.ArrayList<>();
+        for (var file : context.files()) {
+            if (!"TEXT".equals(file.classification()) || file.extractedText() == null) {
+                continue;
+            }
+            if (file.extractedText().length() <= evidenceBudget) {
+                files.add(new SubmissionFile(file.path(), file.extractedText()));
+                evidenceBudget -= file.extractedText().length();
+            } else {
+                omittedFilePaths.add(file.path());
+            }
+        }
         if (files.isEmpty()) {
             throw new GradingAgentPortException(
-                    "No supported text files are available for AI review",
+                    "No supported text files fit within the safe AI evidence budget",
                     null,
                     new GradingExecutionMetadata(
                             null, null, null, null, null, null, null, null,
-                            "FAILED", "NO_TEXT_EVIDENCE", startedAt, Instant.now()));
+                            "FAILED", "NO_TEXT_EVIDENCE_WITHIN_BUDGET", startedAt, Instant.now()));
         }
 
         List<GradingCriterion> criteria = context.criteria().stream()
@@ -62,6 +72,8 @@ public class SpringAiGradingAgentAdapter implements GradingAgentPort {
                 context.totalPoints(),
                 criteria,
                 files,
+                omittedFilePaths,
+                !omittedFilePaths.isEmpty(),
                 null,
                 null);
 
