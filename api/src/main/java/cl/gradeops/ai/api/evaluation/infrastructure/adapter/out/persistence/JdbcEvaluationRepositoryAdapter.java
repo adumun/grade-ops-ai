@@ -124,6 +124,10 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
         if (!"DRAFT".equals(rubric.status())) {
             throw new EvaluationConflictException("Only a draft rubric can be approved");
         }
+        UUID currentRevisionId = lockCurrentRevision(assessmentId, teacherUid);
+        if (!rubric.assessmentRevisionId().equals(currentRevisionId)) {
+            throw new EvaluationConflictException("Assessment instructions changed; create a new rubric version");
+        }
 
         jdbc.update("""
                 UPDATE assessment_rubric_versions
