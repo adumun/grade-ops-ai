@@ -18,11 +18,13 @@ import java.util.UUID;
 public interface EvaluationRepositoryPort {
     RubricView createRubricDraft(UUID assessmentId, String teacherUid, CreateRubricDraftCommand command);
     List<RubricView> listRubrics(UUID assessmentId, String teacherUid);
+    RubricView updateRubricDraft(UUID assessmentId, UUID rubricId, String teacherUid, CreateRubricDraftCommand command);
     RubricView approveRubric(UUID assessmentId, UUID rubricId, String teacherUid);
 
     SubmissionBatchView createSubmissionBatch(
             UUID assessmentId, String teacherUid, String filename, List<SubmissionCandidate> submissions);
     SubmissionBatchView getSubmissionBatch(UUID batchId, String teacherUid);
+    List<SubmissionBatchView> listSubmissionBatches(UUID assessmentId, String teacherUid);
     SubmissionEvidenceView getSubmissionEvidence(UUID submissionId, String teacherUid);
 
     GradingContext getGradingContext(UUID submissionId, String teacherUid);
@@ -30,6 +32,7 @@ public interface EvaluationRepositoryPort {
     GradingReviewView completeGradingRun(UUID gradingRunId, GradingAgentResult result, String teacherUid);
     void failGradingRun(UUID gradingRunId, GradingExecutionMetadata execution);
     GradingReviewView getGradingReview(UUID gradingRunId, String teacherUid);
+    GradingReviewView getLatestGradingReview(UUID submissionId, String teacherUid);
     GradingReviewView updateGradingReview(
             UUID gradingRunId, String teacherUid, GradingProposal editedResult, String teacherComment);
     GradingReviewView approveGradingReview(UUID gradingRunId, String teacherUid);
