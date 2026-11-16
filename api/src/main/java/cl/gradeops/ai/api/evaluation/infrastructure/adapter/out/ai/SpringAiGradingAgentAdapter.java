@@ -33,6 +33,7 @@ public class SpringAiGradingAgentAdapter implements GradingAgentPort {
     public GradingAgentResult grade(GradingContext context) {
         Instant startedAt = Instant.now();
         int evidenceBudget = 80_000;
+        int fileBudget = 120;
         List<SubmissionFile> files = new java.util.ArrayList<>();
         List<String> omittedFilePaths = new java.util.ArrayList<>();
         for (var file : context.files()) {
