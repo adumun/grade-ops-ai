@@ -86,7 +86,7 @@ CREATE INDEX idx_grading_runs_assessment ON grading_runs(assessment_id, started_
 CREATE TABLE grading_reviews (
     id UUID PRIMARY KEY,
     grading_run_id UUID NOT NULL UNIQUE REFERENCES grading_runs(id) ON DELETE CASCADE,
-    status VARCHAR(20) NOT NULL CHECK (status IN ('DRAFT', 'APPROVED')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('DRAFT', 'APPROVED', 'SUPERSEDED')),
     edited_result JSONB NOT NULL,
     final_score NUMERIC(8,2),
     teacher_comment TEXT,
