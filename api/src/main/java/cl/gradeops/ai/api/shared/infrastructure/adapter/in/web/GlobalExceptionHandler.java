@@ -141,7 +141,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleGradingAgentFailure(GradingAgentPortException ex) {
         log.warn("Grading agent execution failed: {}", ex.getMessage(), ex);
         String code = ex.execution() == null ? "GRADING_AGENT_FAILED" : ex.execution().errorCode();
-        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+        HttpStatus status = "NO_TEXT_EVIDENCE_WITHIN_BUDGET".equals(code)
+                ? HttpStatus.UNPROCESSABLE_ENTITY
+                : HttpStatus.BAD_GATEWAY;
+        return ResponseEntity.status(status)
                 .body(ApiErrorResponse.of("GRADING_AGENT_FAILED", code));
     }
 
