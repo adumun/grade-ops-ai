@@ -24,7 +24,6 @@ spring:
 
 app:
   agents:
-    gemini:
-      enabled: false
+    enabled: false
   internal:
     secret: test-internal-secret
