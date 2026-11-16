@@ -105,18 +105,24 @@ export default function EvaluationWorkspacePage({ assessmentId }: { assessmentId
 
   const loadSubmission = useCallback(async (submissionId: string) => {
     setSelectedSubmissionId(submissionId);
+    setError("");
+    setNotice("");
     setEvidence(null);
     setReview(null);
     setEditedProposal(null);
     setTeacherComment("");
-    const [nextEvidence, nextReview] = await Promise.all([
-      getSubmissionEvidence(submissionId),
-      getLatestGradingReview(submissionId),
-    ]);
-    setEvidence(nextEvidence);
-    setReview(nextReview);
-    setEditedProposal(nextReview?.editedResult ?? null);
-    setTeacherComment(nextReview?.teacherComment ?? "");
+    try {
+      const [nextEvidence, nextReview] = await Promise.all([
+        getSubmissionEvidence(submissionId),
+        getLatestGradingReview(submissionId),
+      ]);
+      setEvidence(nextEvidence);
+      setReview(nextReview);
+      setEditedProposal(nextReview?.editedResult ?? null);
+      setTeacherComment(nextReview?.teacherComment ?? "");
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "No pudimos cargar la entrega seleccionada.");
+    }
   }, []);
 
   useEffect(() => {
@@ -314,7 +320,7 @@ export default function EvaluationWorkspacePage({ assessmentId }: { assessmentId
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       setNotice("Exportación de resultados aprobados preparada.");
     } catch (exportError) {
       setError(exportError instanceof Error ? exportError.message : "No pudimos exportar los resultados.");
@@ -336,7 +342,7 @@ export default function EvaluationWorkspacePage({ assessmentId }: { assessmentId
   }
 
   if (!assessment) {
-    return <Page><div className={styles.emptyPanel}><h2>Primero necesitamos una evaluación lista</h2><p>Genera o revisa el borrador de instrucciones antes de construir la rúbrica.</p><Link href={`/assessments/${assessmentId}/draft`}><Button>Ir al borrador</Button></Link></div></Page>;
+    return <Page><div className={styles.emptyPanel}><h2>Primero necesitamos una evaluación lista</h2><p>Genera o revisa el borrador de instrucciones antes de construir la rúbrica.</p><Link href={`/assessments/${assessmentId}/draft`} className={styles.linkButton}>Ir al borrador</Link></div></Page>;
   }
 
   return (
