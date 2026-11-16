@@ -148,8 +148,8 @@ public class ZipSubmissionIntake implements SubmissionArchiveIntakePort {
             String projectDirectory = projectDirectories.getFirst();
             List<SubmissionFileEvidence> merged = new ArrayList<>(grouped.get(projectDirectory));
             merged.addAll(grouped.get("__single__"));
-            grouped.put(projectDirectory, merged);
-            grouped.remove("__single__");
+            grouped.clear();
+            grouped.put("__single__", merged);
         } else if (projectDirectories.size() > 1 && grouped.containsKey("__single__")) {
             List<SubmissionFileEvidence> sharedFiles = grouped.remove("__single__");
             for (String projectDirectory : projectDirectories) {
