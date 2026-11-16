@@ -9,8 +9,7 @@ import cl.gradeops.ai.api.evaluation.application.usecase.EvaluationService;
 import cl.gradeops.ai.api.evaluation.infrastructure.adapter.out.persistence.JdbcEvaluationRepositoryAdapter;
 import cl.gradeops.ai.api.evaluation.infrastructure.adapter.out.zip.ZipSubmissionIntake;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -33,17 +32,14 @@ class EvaluationConfig {
     }
 
     @Bean
-    @ConditionalOnBean(GradeSubmissionUseCase.class)
-    GradingAgentPort gradingAgentPort(GradeSubmissionUseCase gradeSubmissionUseCase) {
-        return new SpringAiGradingAgentAdapter(gradeSubmissionUseCase);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(GradingAgentPort.class)
-    GradingAgentPort disabledGradingAgentPort() {
-        return context -> {
-            throw new IllegalStateException("The grading agent is disabled for this application profile");
-        };
+    GradingAgentPort gradingAgentPort(ObjectProvider<GradeSubmissionUseCase> gradeSubmissionUseCaseProvider) {
+        GradeSubmissionUseCase useCase = gradeSubmissionUseCaseProvider.getIfAvailable();
+        if (useCase == null) {
+            return context -> {
+                throw new IllegalStateException("The grading agent is disabled for this application profile");
+            };
+        }
+        return new SpringAiGradingAgentAdapter(useCase);
     }
 
     @Bean
