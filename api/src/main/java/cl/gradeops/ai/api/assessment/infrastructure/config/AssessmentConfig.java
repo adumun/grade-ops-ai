@@ -38,6 +38,7 @@ import cl.gradeops.ai.api.shared.application.security.OwnershipVerifier;
 import cl.gradeops.ai.api.shared.infrastructure.adapter.out.persistence.IdempotencyRecordJpaRepository;
 import cl.gradeops.ai.api.shared.infrastructure.adapter.out.persistence.IdempotencyRecordPersistenceAdapter;
 import cl.gradeops.ai.api.shared.infrastructure.adapter.out.persistence.IdempotencyRecordPersistenceMapper;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -139,8 +140,15 @@ class AssessmentConfig {
     }
 
     @Bean
-    AssessmentAgentClient assessmentAgentClient(GenerateAssessmentDraftUseCase generateAssessmentDraftUseCase) {
-        return new AssessmentAgentClient(generateAssessmentDraftUseCase);
+    AssessmentAgentClient assessmentAgentClient(
+            ObjectProvider<GenerateAssessmentDraftUseCase> generateAssessmentDraftUseCaseProvider) {
+        GenerateAssessmentDraftUseCase useCase = generateAssessmentDraftUseCaseProvider.getIfAvailable();
+        if (useCase == null) {
+            useCase = command -> {
+                throw new IllegalStateException("The assessment generation agent is disabled for this profile");
+            };
+        }
+        return new AssessmentAgentClient(useCase);
     }
 
     @Bean
