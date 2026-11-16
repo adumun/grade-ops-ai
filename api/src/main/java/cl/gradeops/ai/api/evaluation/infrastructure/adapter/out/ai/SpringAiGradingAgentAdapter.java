@@ -49,7 +49,7 @@ public class SpringAiGradingAgentAdapter implements GradingAgentPort {
                 fileBudget--;
             } else if (evidenceBudget > 256) {
                 String prefix = file.extractedText().substring(0, evidenceBudget);
-                int lastCompleteLine = prefix.lastIndexOf('\\n');
+                int lastCompleteLine = prefix.lastIndexOf('\n');
                 if (lastCompleteLine > 0) {
                     files.add(new SubmissionFile(file.path(), prefix.substring(0, lastCompleteLine)));
                     truncatedFilePaths.add(file.path());
