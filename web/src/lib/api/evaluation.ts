@@ -14,7 +14,10 @@ export class EvaluationApiError extends Error {
     public body: unknown,
     action: string,
   ) {
-    super(`${action} failed with status ${status}`);
+    const detail = body && typeof body === "object" && "message" in body
+      ? String((body as { message?: unknown }).message ?? "")
+      : "";
+    super(detail || `${action} failed with status ${status}`);
     this.name = "EvaluationApiError";
   }
 }
