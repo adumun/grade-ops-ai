@@ -27,47 +27,35 @@
 
 ## Overview
 
-`grade-ops-ai-api` is the domain backbone of the GradeOps AI platform. It owns all business logic, workflow state, persistence, and authorization. The frontend (`grade-ops-ai-web`) and the agent runtime (`grade-ops-ai-agents`) are both consumers of this API — neither holds domain state or enforces business rules independently.
+`grade-ops-ai-api` is the only backend application and owns all business logic, workflow state, persistence, authorization and audit. The Spring AI capabilities in the sibling `agents/` module execute in-process behind typed application ports; they do not run as a second service, make loopback HTTP calls or persist domain state.
 
-Built as a **Spring Boot 4 modular monolith** on Java 21, the API exposes two surfaces:
+Built as a **Spring Boot 4 modular monolith** on Java 21, the backend exposes:
 - **Public API** — consumed by the Next.js frontend via Firebase ID token authentication.
-- **Internal API** (`/internal/*`) — consumed by operators and the agent runtime via a pre-shared secret header, never exposed to the browser.
+- **Operator-only internal API** (`/internal/*`) — protected by the backend's internal shared-secret filter and never exposed to the browser.
+- **In-process AI capabilities** — Spring AI agents are invoked through application interfaces; there is no agent HTTP endpoint in the P0 runtime.
 
 ---
 
 ## Architecture
 
 ```
-grade-ops-ai-web  ──── Bearer <firebase_id_token> ────►  /api/**
-grade-ops-ai-agents ── X-Internal-Secret: <secret> ───►  /internal/**
-                                                               │
-                                                    ┌──────────▼──────────────┐
-                                                    │   Spring Security        │
-                                                    │   Filter Chain           │
-                                                    │                          │
-                                                    │  InternalAuthFilter      │
-                                                    │       ↓                  │
-                                                    │  FirebaseTokenFilter     │
-                                                    │       ↓                  │
-                                                    │  EmailVerifiedFilter     │
-                                                    │       ↓                  │
-                                                    │  Controllers / Services  │
-                                                    └──────────┬───────────────┘
-                                                               │
-                                                    ┌──────────▼──────────────┐
-                                                    │   Cloud SQL             │
-                                                    │   PostgreSQL 15         │
-                                                    │   (Flyway migrations)   │
-                                                    └─────────────────────────┘
+Next.js Web  ─── Bearer <firebase_id_token> ───►  Spring Boot backend
+                                                  ├── Public API / domain workflows
+                                                  ├── PostgreSQL persistence / Flyway
+                                                  └── In-process Spring AI module
+                                                        ├── Gemini / Groq adapters
+                                                        └── Versioned prompts + typed results
 ```
+
+The `agents/` Maven module is packaged as a library dependency of `api/`. It is invoked in-process through typed application contracts. The API owns durable AI operation/attempt records, domain state, transaction boundaries and teacher approval. There is no second agent server, loopback HTTP call or independent agent deployment in the P0 architecture.
 
 **Filter chain responsibilities:**
 
 | Filter | Path | Responsibility |
 |--------|------|---------------|
-| `InternalAuthFilter` | `/internal/**` | Validates `X-Internal-Secret` header; rejects with 403 if missing or wrong |
-| `FirebaseTokenFilter` | `/api/**` | Verifies Firebase ID token via Admin SDK; populates `AuthenticatedTeacher` principal and sets `firebaseToken` request attribute |
-| `EmailVerifiedFilter` | `/api/**` | Reads `firebaseToken` attribute; rejects with 403 if `email_verified` is false |
+| `InternalAuthFilter` | `/internal/**` | Validates the operator shared-secret header; rejects with 403 if missing or wrong |
+| `FirebaseTokenFilter` | `/api/**` | Verifies Firebase ID token via Admin SDK and populates the authenticated teacher principal |
+| `EmailVerifiedFilter` | `/api/**` | Blocks unverified accounts before they reach protected endpoints |
 
 ---
 
@@ -75,7 +63,7 @@ grade-ops-ai-agents ── X-Internal-Secret: <secret> ───►  /internal/*
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Framework | Spring Boot (Web MVC) | 4.1.0 |
+| Framework | Spring Boot (Web MVC) | 4.1.0 |\n| AI runtime | Spring AI | 2.0.0 |
 | Language | Java | 21 |
 | Security | Spring Security | (Boot-managed) |
 | Auth | Firebase Admin SDK | 9.3.0 |
@@ -171,7 +159,7 @@ api/
 
 ### Environment Variables
 
-The API is configured via `application.yml` with environment variable overrides. Set the following before starting:
+The backend is configured via `api/src/main/resources/application*.yml` with environment variable overrides. Set the following before starting:
 
 ```bash
 # Database
@@ -179,8 +167,20 @@ DATABASE_URL=jdbc:postgresql://localhost:5432/gradeops
 DATABASE_USER=gradeops
 DATABASE_PASSWORD=gradeops
 
-# Internal API — shared secret between this service and the agent runtime / operators
+# Internal API — operator-only shared secret
 INTERNAL_API_SECRET=change-me-in-development
+GRADEOPS_DEFAULT_PROVIDER=groq
+GRADEOPS_GROQ_API_KEY=...
+GRADEOPS_GROQ_MODEL=llama-3.3-70b-versatile
+GRADEOPS_GEMINI_API_KEY=...
+GRADEOPS_GEMINI_MODEL=gemini-2.0-flash
+
+# Spring AI providers (select the configured provider with GRADEOPS_DEFAULT_PROVIDER)
+GRADEOPS_DEFAULT_PROVIDER=groq
+GRADEOPS_GROQ_API_KEY=...
+GRADEOPS_GROQ_MODEL=llama-3.3-70b-versatile
+GRADEOPS_GEMINI_API_KEY=...
+GRADEOPS_GEMINI_MODEL=gemini-2.0-flash
 
 # Firebase Admin SDK — path to service account JSON key file
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/firebase-adminsdk.json
@@ -207,7 +207,12 @@ createdb gradeops
 ./mvnw spring-boot:run -Dspring.profiles.active=local
 ```
 
-The API starts on **http://localhost:8080**.
+The backend starts on **http://localhost:8080**. From the repository root, install the capability module and run the single API application:
+
+```bash
+./api/mvnw -f pom.xml -pl agents -Pbeta install -DskipTests
+./api/mvnw -f api/pom.xml -Pbeta spring-boot:run
+```
 
 ---
 
@@ -285,11 +290,11 @@ docker run -p 8080:8080 \
 
 ---
 
-## Related Repositories
+## Related Modules and Repositories
 
-| Repo | Description |
+| Path | Responsibility |
 |------|-------------|
-| [`grade-ops-ai-web`](../web/) | Next.js teacher workspace — API consumer |
-| [`grade-ops-ai-agents`](../agents/) | Spring AI agent runtime — calls `/internal/**` |
-| [`grade-ops-ai-infra`](../infra/) | Terraform — GCP infrastructure provisioning |
-| [`grade-ops-ai-docs`](../docs/) | Canonical product and architecture documentation |
+| [`../web/`](../web/) | Next.js teacher workspace — API consumer |
+| [`../agents/`](../agents/) | In-process Spring AI capability module — no independent deployment |
+| [`../infra/`](../infra/) | Terraform — GCP infrastructure provisioning |
+| [`../docs/`](../docs/) | Canonical product and architecture documentation |

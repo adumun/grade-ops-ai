@@ -193,6 +193,19 @@ export default function DraftBuilderPage({ params }: DraftBuilderPageProps) {
 
   return (
     <div style={{ maxWidth: "var(--content-max)", display: "flex", flexDirection: "column", gap: 32 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div>
+          <p style={{ color: "var(--text-strong)", fontWeight: 600, margin: 0 }}>¿Lista para recibir entregas?</p>
+          <p style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", margin: "4px 0 0" }}>
+            Define la rúbrica, recibe los proyectos y revisa propuestas con evidencia.
+          </p>
+        </div>
+        {!data.isViewingHistoricalVersion && !isBlockedByConflict && (
+          <Link href={`/assessments/${id}/grading`}>
+            <Button variant="primary">Preparar revisión de código</Button>
+          </Link>
+        )}
+      </div>
       {data.staleConflict && (
         <div
           role="alert"

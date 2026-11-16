@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+
 import AppLogo from "@/components/brand/AppLogo";
 import { Avatar } from "@/components/ds";
 import { NAVIGATION_CONFIG } from "./NavigationConfig";
@@ -8,11 +8,7 @@ import NavigationItem from "./NavigationItem";
 import styles from "./AppShell.module.css";
 
 export default function Sidebar({ id, onNavigate, mobile = false, onClose }: { id: string; onNavigate?: () => void; mobile?: boolean; onClose?: () => void }) {
-  const [displayName, setDisplayName] = useState("Camila Rojas");
-
-  useEffect(() => {
-    setDisplayName("Camila Rojas");
-  }, []);
+  const displayName = "Docente";
 
   const navigate = () => {
     onNavigate?.();

@@ -1,18 +1,19 @@
 FROM eclipse-temurin:21-jdk-jammy AS builder
-WORKDIR /app
-COPY .mvn .mvn
-COPY mvnw pom.xml ./
-ARG MAVEN_PROFILE=beta
-RUN ./mvnw dependency:go-offline -q -P${MAVEN_PROFILE}
-COPY src src
-RUN ./mvnw package -DskipTests -q -P${MAVEN_PROFILE}
+WORKDIR /workspace
+
+COPY api/.mvn api/.mvn
+COPY api/mvnw api/mvnw
+COPY pom.xml pom.xml
+COPY api/pom.xml api/pom.xml
+COPY agents/pom.xml agents/pom.xml
+RUN chmod +x api/mvnw && ./api/mvnw -f pom.xml -pl api -am -P${MAVEN_PROFILE:-beta} dependency:go-offline -q
+
+COPY api/src api/src
+COPY agents/src agents/src
+RUN ./api/mvnw -f pom.xml -pl api -am -P${MAVEN_PROFILE:-beta} package -DskipTests -q
 
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
-COPY --from=builder /app/target/*.jar app.jar
+COPY --from=builder /workspace/api/target/grade-ops-api-*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", \
-  "-XX:TieredStopAtLevel=1", \
-  "-Dspring.jmx.enabled=false", \
-  "-Dspring.backgroundpreinitializer.ignore=true", \
-  "-jar", "app.jar"]
+ENTRYPOINT ["java", "-XX:TieredStopAtLevel=1", "-Dspring.jmx.enabled=false", "-Dspring.backgroundpreinitializer.ignore=true", "-jar", "app.jar"]

@@ -11,7 +11,11 @@ import styles from "./AppShell.module.css";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const navigationId = pathname?.startsWith("/preview/operations") ? "operations-inbox-nav" : "teacher-home-nav";
+  const navigationId = pathname?.startsWith("/assessments")
+    ? "assessments-nav"
+    : pathname?.startsWith("/preview/operations")
+      ? "operations-inbox-nav"
+      : "teacher-home-nav";
   const { config } = useShell();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -55,7 +59,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className={styles.topbarActions}>
             <IconButton label="Notificaciones"><LucideIcon name="bell" size={18} /></IconButton>
-            <DemoStateSelector />
+            {pathname?.startsWith("/preview") && <DemoStateSelector />}
             {config.actions}
           </div>
         </header>

@@ -1,6 +1,9 @@
 package cl.gradeops.ai.api.shared.infrastructure.adapter.in.web;
 
 import cl.gradeops.ai.api.agentclient.AgentClientException;
+import cl.gradeops.ai.api.evaluation.application.exception.EvaluationConflictException;
+import cl.gradeops.ai.api.evaluation.application.exception.InvalidEvaluationRequestException;
+import cl.gradeops.ai.api.evaluation.application.exception.GradingAgentPortException;
 import cl.gradeops.ai.api.assessment.application.exception.AlreadyGeneratedException;
 import cl.gradeops.ai.api.assessment.application.exception.NoActiveOperationToRetryException;
 import cl.gradeops.ai.api.assessment.application.exception.OperationInProgressException;
@@ -120,6 +123,26 @@ public class GlobalExceptionHandler {
         };
         log.warn("Agent call failed: {}", ex.getMessage(), ex);
         return ResponseEntity.status(status).body(ApiErrorResponse.of("AGENT_CALL_FAILED", ex.reason().name()));
+    }
+
+    @ExceptionHandler(InvalidEvaluationRequestException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidEvaluationRequest(InvalidEvaluationRequestException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiErrorResponse.of("INVALID_EVALUATION_REQUEST", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EvaluationConflictException.class)
+    public ResponseEntity<ApiConflictErrorResponse> handleEvaluationConflict(EvaluationConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiConflictErrorResponse.of("EVALUATION_CONFLICT", ex.getMessage()));
+    }
+
+    @ExceptionHandler(GradingAgentPortException.class)
+    public ResponseEntity<ApiErrorResponse> handleGradingAgentFailure(GradingAgentPortException ex) {
+        log.warn("Grading agent execution failed: {}", ex.getMessage(), ex);
+        String code = ex.execution() == null ? "GRADING_AGENT_FAILED" : ex.execution().errorCode();
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiErrorResponse.of("GRADING_AGENT_FAILED", code));
     }
 
     // ── Raíces de jerarquía propia ────────────────────────────────────────────

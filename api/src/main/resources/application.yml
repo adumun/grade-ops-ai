@@ -1,4 +1,7 @@
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration
   application:
     name: grade-ops-api
   datasource:
@@ -28,7 +31,11 @@ app:
   internal:
     secret: ${INTERNAL_API_SECRET:change-me-in-production}
   agents:
-    base-url: ${AGENTS_BASE_URL:http://localhost:8081}
+    llm:
+      default-provider: ${GRADEOPS_DEFAULT_PROVIDER:groq}
+      cost-per-1k-tokens:
+        gemini: ${GRADEOPS_GEMINI_COST_PER_1K_TOKENS:0.000075}
+        groq: ${GRADEOPS_GROQ_COST_PER_1K_TOKENS:0.0}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:https://gradeops.app}
   auth:

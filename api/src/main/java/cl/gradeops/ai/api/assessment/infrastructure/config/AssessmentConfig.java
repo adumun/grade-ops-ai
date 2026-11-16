@@ -1,6 +1,7 @@
 package cl.gradeops.ai.api.assessment.infrastructure.config;
 
 import cl.gradeops.ai.api.agentclient.AssessmentAgentClient;
+import cl.gradeops.ai.agents.assessment.application.port.in.GenerateAssessmentDraftUseCase;
 import cl.gradeops.ai.api.assessment.application.port.out.AgentAttemptRepositoryPort;
 import cl.gradeops.ai.api.assessment.application.port.out.AiOperationRepositoryPort;
 import cl.gradeops.ai.api.assessment.application.port.out.AssessmentBriefRepositoryPort;
@@ -135,6 +136,11 @@ class AssessmentConfig {
     @Bean
     IdempotencyGuard idempotencyGuard(IdempotencyRepositoryPort idempotencyRepository) {
         return new IdempotencyGuard(idempotencyRepository);
+    }
+
+    @Bean
+    AssessmentAgentClient assessmentAgentClient(GenerateAssessmentDraftUseCase generateAssessmentDraftUseCase) {
+        return new AssessmentAgentClient(generateAssessmentDraftUseCase);
     }
 
     @Bean

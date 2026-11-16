@@ -1,24 +1,27 @@
-name: Deploy api/ to Cloud Run
+name: Build and deploy GradeOps AI modular backend
 
 on:
   push:
     branches: [master]
     paths:
+      - 'pom.xml'
       - 'api/**'
+      - 'agents/**'
   pull_request:
-    branches: [master]
+    branches: [develop, master]
     paths:
+      - 'pom.xml'
       - 'api/**'
+      - 'agents/**'
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
-  build-and-deploy:
-    name: Build and deploy api/
+  verify:
+    name: Verify modular backend
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,11 +32,13 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-          cache-dependency-path: api/pom.xml
+          cache-dependency-path: |
+            pom.xml
+            api/pom.xml
+            agents/pom.xml
 
-      - name: Run tests
-        run: ./mvnw test
-        working-directory: api/
+      - name: Run backend tests
+        run: ./api/mvnw -f pom.xml -pl api -am -Pbeta test
 
       - name: Authenticate to Google Cloud
         if: github.event_name == 'push'
@@ -49,14 +54,13 @@ jobs:
       - name: Build container image
         if: github.event_name == 'push'
         run: |
-          ./mvnw spring-boot:build-image \
-            -Dspring-boot.build-image.imageName=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/grade-ops-ai/grade-ops-ai-api:${{ github.sha }}
-        working-directory: api/
+          docker build --build-arg MAVEN_PROFILE=demo \
+            -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/grade-ops-ai/grade-ops-ai-api:${{ github.sha }} \
+            -f api/Dockerfile .
 
       - name: Push image to Artifact Registry
         if: github.event_name == 'push'
-        run: |
-          docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/grade-ops-ai/grade-ops-ai-api:${{ github.sha }}
+        run: docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/grade-ops-ai/grade-ops-ai-api:${{ github.sha }}
 
       - name: Deploy to Cloud Run
         if: github.event_name == 'push'

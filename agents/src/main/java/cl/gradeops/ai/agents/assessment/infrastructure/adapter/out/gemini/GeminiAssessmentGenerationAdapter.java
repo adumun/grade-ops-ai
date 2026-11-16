@@ -2,6 +2,8 @@ package cl.gradeops.ai.agents.assessment.infrastructure.adapter.out.gemini;
 
 import cl.gradeops.ai.agents.assessment.application.port.out.AssessmentGenerationPort;
 import cl.gradeops.ai.agents.assessment.application.port.out.AssessmentGenerationResponse;
+import cl.gradeops.ai.agents.shared.application.port.out.StructuredGenerationPort;
+import cl.gradeops.ai.agents.shared.application.port.out.StructuredGenerationResponse;
 import cl.gradeops.ai.agents.assessment.application.result.AssessmentResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
@@ -29,29 +31,42 @@ import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
  * "unavailable" distinguishable from "zero".
  */
 @RequiredArgsConstructor
-public class GeminiAssessmentGenerationAdapter implements AssessmentGenerationPort {
+public class GeminiAssessmentGenerationAdapter implements AssessmentGenerationPort, StructuredGenerationPort {
 
     private final ChatClient chatClient;
 
     @Override
     public AssessmentGenerationResponse generate(String renderedPrompt, String model) {
+        StructuredGenerationResponse<AssessmentResult> response =
+                generate(renderedPrompt, model, AssessmentResult.class);
+        return AssessmentGenerationResponse.builder()
+                .result(response.result())
+                .rawResponseText(response.rawResponseText())
+                .modelName(response.modelName())
+                .estimatedInputTokens(response.estimatedInputTokens())
+                .estimatedOutputTokens(response.estimatedOutputTokens())
+                .build();
+    }
+
+    @Override
+    public <T> StructuredGenerationResponse<T> generate(
+            String renderedPrompt, String model, Class<T> responseType) {
         ChatClient.ChatClientRequestSpec requestSpec = chatClient.prompt(renderedPrompt);
         if (model != null) {
-            requestSpec = requestSpec.options(GoogleGenAiChatOptions.builder().model(model));
+            requestSpec = requestSpec.options(GoogleGenAiChatOptions.builder().model(model).build());
         }
-        ResponseEntity<ChatResponse, AssessmentResult> responseEntity =
-                requestSpec.call().responseEntity(AssessmentResult.class);
+        ResponseEntity<ChatResponse, T> responseEntity =
+                requestSpec.call().responseEntity(responseType);
 
         ChatResponse chatResponse = responseEntity.response();
         Usage usage = chatResponse.getMetadata() != null ? chatResponse.getMetadata().getUsage() : null;
         boolean usageAvailable = usage != null && !(usage instanceof EmptyUsage);
 
-        return AssessmentGenerationResponse.builder()
-                .result(responseEntity.entity())
-                .rawResponseText(chatResponse.getResult().getOutput().getText())
-                .modelName(chatResponse.getMetadata() != null ? chatResponse.getMetadata().getModel() : null)
-                .estimatedInputTokens(usageAvailable ? usage.getPromptTokens() : null)
-                .estimatedOutputTokens(usageAvailable ? usage.getCompletionTokens() : null)
-                .build();
+        return new StructuredGenerationResponse<>(
+                responseEntity.entity(),
+                chatResponse.getResult().getOutput().getText(),
+                chatResponse.getMetadata() != null ? chatResponse.getMetadata().getModel() : null,
+                usageAvailable ? usage.getPromptTokens() : null,
+                usageAvailable ? usage.getCompletionTokens() : null);
     }
 }
