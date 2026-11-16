@@ -5,3 +5,27 @@ gcs:
 
 # Cloud SQL connection handled by postgres-socket-factory via DATABASE_URL env var
 # Firebase credentials come from ADC (Cloud Run service account — no extra config needed)
+
+spring:
+  ai:
+    google:
+      genai:
+        project-id: ${GOOGLE_CLOUD_PROJECT}
+        location: ${VERTEX_AI_LOCATION:us-central1}
+        chat:
+          options:
+            model: ${GRADEOPS_GEMINI_MODEL:gemini-2.0-flash}
+    openai:
+      api-key: ${GRADEOPS_GROQ_API_KEY}
+      base-url: ${GRADEOPS_GROQ_BASE_URL:https://api.groq.com/openai/v1}
+      chat:
+        options:
+          model: ${GRADEOPS_GROQ_MODEL:llama-3.3-70b-versatile}
+
+app:
+  agents:
+    llm:
+      default-provider: ${GRADEOPS_DEFAULT_PROVIDER:gemini}
+      cost-per-1k-tokens:
+        gemini: ${GRADEOPS_GEMINI_COST_PER_1K_TOKENS:0.000075}
+        groq: ${GRADEOPS_GROQ_COST_PER_1K_TOKENS:0.0}
