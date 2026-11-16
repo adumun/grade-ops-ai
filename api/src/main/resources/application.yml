@@ -31,6 +31,7 @@ app:
   internal:
     secret: ${INTERNAL_API_SECRET:change-me-in-production}
   agents:
+    enabled: ${GRADEOPS_AI_ENABLED:false}
     llm:
       default-provider: ${GRADEOPS_DEFAULT_PROVIDER:groq}
       cost-per-1k-tokens:
