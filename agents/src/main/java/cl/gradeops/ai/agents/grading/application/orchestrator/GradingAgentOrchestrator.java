@@ -187,10 +187,13 @@ public class GradingAgentOrchestrator {
         }
     }
 
-    private static String buildEvidenceBundle(List<SubmissionFile> files) {
+    private static String buildEvidenceBundle(List<SubmissionFile> files, List<String> truncatedFilePaths) {
         StringBuilder bundle = new StringBuilder();
+        Set<String> truncated = truncatedFilePaths == null ? Set.of() : Set.copyOf(truncatedFilePaths);
         for (SubmissionFile file : files) {
-            bundle.append("\n--- FILE: ").append(file.path()).append(" ---\n");
+            bundle.append("\n--- FILE: ").append(file.path())
+                    .append(truncated.contains(file.path()) ? " [PARTIAL — TRUNCATED AT LAST COMPLETE LINE]" : "")
+                    .append(" ---\n");
             String[] lines = file.content().split("\\R", -1);
             for (int index = 0; index < lines.length; index++) {
                 bundle.append(index + 1).append(" | ").append(lines[index]).append('\n');
