@@ -257,6 +257,19 @@ missing or still placeholders. It never generates or substitutes a key.
 
 ---
 
+## P0 teacher code-review workspace
+
+The route `/assessments/[id]/grading` provides the first end-to-end programming-teacher workflow:
+
+- Edit and approve an immutable rubric version.
+- Upload a ZIP of student projects using authenticated multipart API calls.
+- Inspect the safe file inventory and extracted source evidence.
+- Request an AI grading proposal with criterion-level rationale, evidence citations and uncertainty.
+- Edit scores and feedback, save the review and explicitly approve it.
+- Export approved results as CSV.
+
+The browser never receives provider credentials. ZIP parsing and evidence verification happen in the backend; submitted code is never executed. See [the evaluation workspace README](src/features/evaluation-workspace/README.md) and [ADR-018](../docs/99-decisions/2026-11-16-p0-teacher-demo-modular-monolith.md).
+
 ## Security Model
 
 - **No server-side secrets.** All five `NEXT_PUBLIC_*` variables are safe to expose in the browser; they identify the Firebase project but carry no privileged access.
@@ -289,7 +302,7 @@ docker run -p 3000:3000 grade-ops-web
 | Repo | Description |
 |------|-------------|
 | [`grade-ops-ai-api`](../api/) | Spring Boot domain API — all business logic and persistence |
-| [`grade-ops-ai-agents`](../agents/) | Spring AI agent runtime — Gemini-powered assessment pipeline |
+| [`agents/`](../agents/) | In-process Spring AI capability module — assessment and code-grading use cases |
 | [`grade-ops-ai-infra`](../infra/) | Terraform — GCP infrastructure provisioning |
 | [`grade-ops-ai-docs`](../docs/) | Canonical product and architecture documentation |
 
