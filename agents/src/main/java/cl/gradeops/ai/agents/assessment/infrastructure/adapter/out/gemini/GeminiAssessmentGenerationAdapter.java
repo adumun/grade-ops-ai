@@ -53,7 +53,7 @@ public class GeminiAssessmentGenerationAdapter implements AssessmentGenerationPo
             String renderedPrompt, String model, Class<T> responseType) {
         ChatClient.ChatClientRequestSpec requestSpec = chatClient.prompt(renderedPrompt);
         if (model != null) {
-            requestSpec = requestSpec.options(GoogleGenAiChatOptions.builder().model(model));
+            requestSpec = requestSpec.options(GoogleGenAiChatOptions.builder().model(model).build());
         }
         ResponseEntity<ChatResponse, T> responseEntity =
                 requestSpec.call().responseEntity(responseType);
