@@ -11,6 +11,9 @@ import cl.gradeops.ai.api.shared.infrastructure.config.security.AuthenticatedTea
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.ContentDisposition;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -128,6 +131,21 @@ public class EvaluationController {
             @PathVariable UUID assessmentId,
             @AuthenticationPrincipal AuthenticatedTeacher teacher) {
         return evaluationService.listApprovedReviews(assessmentId, teacher.uid());
+    }
+
+    @GetMapping(path = "/assessments/{assessmentId}/approved-results/export", produces = "text/csv")
+    public ResponseEntity<byte[]> exportApprovedResults(
+            @PathVariable UUID assessmentId,
+            @AuthenticationPrincipal AuthenticatedTeacher teacher) {
+        byte[] csv = evaluationService.exportApprovedResultsCsv(assessmentId, teacher.uid());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename("gradeops-results-" + assessmentId + ".csv")
+                                .build()
+                                .toString())
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .body(csv);
     }
 
     @GetMapping("/submissions/{submissionId}/evidence")
