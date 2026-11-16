@@ -91,6 +91,34 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
 
     @Override
     @Transactional
+    public RubricView updateRubricDraft(
+            UUID assessmentId, UUID rubricId, String teacherUid, CreateRubricDraftCommand command) {
+        RubricView current = findRubric(rubricId, assessmentId, teacherUid);
+        if (!"DRAFT".equals(current.status())) {
+            throw new EvaluationConflictException("Only a draft rubric can be edited");
+        }
+        UUID currentRevisionId = lockCurrentRevision(assessmentId, teacherUid);
+        if (!current.assessmentRevisionId().equals(currentRevisionId)) {
+            throw new EvaluationConflictException("Assessment instructions changed; create a new rubric version");
+        }
+        int updated = jdbc.update("""
+                UPDATE assessment_rubric_versions
+                SET title = ?, total_points = ?, criteria = ?::jsonb
+                WHERE id = ? AND assessment_id = ? AND status = 'DRAFT'
+                """,
+                command.title().trim(),
+                command.totalPoints(),
+                writeJson(command.criteria()),
+                rubricId,
+                assessmentId);
+        if (updated != 1) {
+            throw new EvaluationConflictException("Rubric changed while the teacher edit was being saved");
+        }
+        return findRubric(rubricId, assessmentId, teacherUid);
+    }
+
+    @Override
+    @Transactional
     public RubricView approveRubric(UUID assessmentId, UUID rubricId, String teacherUid) {
         RubricView rubric = findRubric(rubricId, assessmentId, teacherUid);
         if (!"DRAFT".equals(rubric.status())) {
@@ -205,7 +233,10 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
         }
 
         List<SubmissionSummary> submissions = jdbc.query("""
-                SELECT s.id, s.learner_label, s.source_directory, s.status, s.file_count, s.text_file_count
+                SELECT s.id, s.learner_label, s.source_directory, s.status, s.file_count, s.text_file_count,
+                       (SELECT gr.id FROM grading_runs gr
+                        WHERE gr.submission_id = s.id
+                        ORDER BY gr.started_at DESC LIMIT 1) AS latest_grading_run_id
                 FROM submissions s
                 WHERE s.batch_id = ?
                 ORDER BY s.learner_label
@@ -216,7 +247,8 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
                         rs.getString("source_directory"),
                         rs.getString("status"),
                         rs.getInt("file_count"),
-                        rs.getInt("text_file_count")),
+                        rs.getInt("text_file_count"),
+                        rs.getObject("latest_grading_run_id", UUID.class)),
                 batchId);
 
         return new SubmissionBatchView(
@@ -228,6 +260,17 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
                 header.totalSubmissions(),
                 submissions,
                 header.createdAt());
+    }
+
+    @Override
+    public List<SubmissionBatchView> listSubmissionBatches(UUID assessmentId, String teacherUid) {
+        assertAssessmentOwner(assessmentId, teacherUid);
+        List<UUID> batchIds = jdbc.query("""
+                SELECT id FROM submission_batches
+                WHERE assessment_id = ?
+                ORDER BY created_at DESC
+                """, (rs, row) -> rs.getObject("id", UUID.class), assessmentId);
+        return batchIds.stream().map(id -> getSubmissionBatch(id, teacherUid)).toList();
     }
 
     @Override
@@ -453,6 +496,23 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
         } catch (EmptyResultDataAccessException exception) {
             throw new ResourceNotFoundException(gradingRunId.toString());
         }
+    }
+
+    @Override
+    public GradingReviewView getLatestGradingReview(UUID submissionId, String teacherUid) {
+        assertSubmissionOwner(submissionId, teacherUid);
+        List<UUID> runIds = jdbc.query("""
+                SELECT gr.id
+                FROM grading_runs gr
+                JOIN grading_reviews r ON r.grading_run_id = gr.id
+                JOIN submissions s ON s.id = gr.submission_id
+                JOIN submission_batches b ON b.id = s.batch_id
+                JOIN assessments a ON a.id = b.assessment_id
+                WHERE gr.submission_id = ? AND a.teacher_uid = ?
+                ORDER BY gr.started_at DESC
+                LIMIT 1
+                """, (rs, row) -> rs.getObject(1, UUID.class), submissionId, teacherUid);
+        return runIds.isEmpty() ? null : getGradingReview(runIds.getFirst(), teacherUid);
     }
 
     @Override
