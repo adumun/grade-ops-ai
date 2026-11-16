@@ -6,9 +6,15 @@ import cl.gradeops.ai.agents.assessment.application.port.out.AssessmentGeneratio
 import cl.gradeops.ai.agents.assessment.application.usecase.GenerateAssessmentDraftHandler;
 import cl.gradeops.ai.agents.assessment.infrastructure.adapter.out.gemini.GeminiAssessmentGenerationAdapter;
 import cl.gradeops.ai.agents.assessment.infrastructure.adapter.out.groq.GroqAssessmentGenerationAdapter;
+import cl.gradeops.ai.agents.grading.application.orchestrator.GradingAgentOrchestrator;
+import cl.gradeops.ai.agents.grading.application.port.in.GradeSubmissionUseCase;
+import cl.gradeops.ai.agents.grading.application.usecase.GradeSubmissionHandler;
+import cl.gradeops.ai.agents.shared.application.port.out.StructuredGenerationPort;
+import cl.gradeops.ai.agents.shared.application.port.out.StructuredGenerationPortSelector;
 import java.util.Map;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -87,5 +93,25 @@ class AssessmentConfig {
     @Bean
     GenerateAssessmentDraftHandler generateAssessmentDraftHandler(AssessmentAgentOrchestrator orchestrator) {
         return new GenerateAssessmentDraftHandler(orchestrator);
+    }
+
+    @Bean
+    StructuredGenerationPortSelector structuredGenerationPortSelector(
+            Map<String, StructuredGenerationPort> portsByProvider) {
+        return new StructuredGenerationPortSelector(portsByProvider, defaultProvider);
+    }
+
+    @Bean
+    GradingAgentOrchestrator gradingAgentOrchestrator(
+            StructuredGenerationPortSelector selector, JsonMapper jsonMapper) {
+        return new GradingAgentOrchestrator(
+                selector,
+                Map.of("gemini", geminiCostPerKTokens, "groq", groqCostPerKTokens),
+                jsonMapper);
+    }
+
+    @Bean
+    GradeSubmissionUseCase gradeSubmissionUseCase(GradingAgentOrchestrator orchestrator) {
+        return new GradeSubmissionHandler(orchestrator);
     }
 }
