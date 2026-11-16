@@ -104,6 +104,20 @@ Agents generate and suggest — they never finalize scores, silently modify appr
 
 ---
 
+## P0 teacher workflow
+
+The first product slice focuses on the most time-consuming programming-teacher task: reviewing heterogeneous code submissions.
+
+Assessment brief → versioned, teacher-approved rubric → ZIP submission intake → safe source evidence inventory → AI grading proposal by criterion → teacher edits and explicit approval → CSV export.
+
+GradeOps never executes student code in this workflow. AI output is a proposal; missing evidence and uncertainty stay visible, and approval does not automatically publish a result to a student.
+
+The accelerated delivery plan and architecture decision are recorded in:
+- [P0 teacher demo delivery plan](docs/01-product/2026-11-16-p0-teacher-demo-delivery-plan.md)
+- [ADR-018 — modular monolith](docs/99-decisions/2026-11-16-p0-teacher-demo-modular-monolith.md)
+
+---
+
 ## Local development
 
 The root `Makefile` is the stable development facade for the current Web
@@ -116,7 +130,7 @@ require browser infrastructure, services, credentials, and/or real data.
 
 | Tool | Version |
 |------|---------|
-| Node.js | 18+ |
+| Node.js | 22.12+ |
 | Java | 21 |
 | Maven Wrapper | included (`./api/mvnw`) |
 | PostgreSQL | 15+ (local instance) |
@@ -132,9 +146,8 @@ docker compose up -d        # local PostgreSQL + any auxiliary containers
 Then start the backend and web workspace:
 
 ```bash
-# Build the agent module and start the single backend process
-./api/mvnw -f pom.xml -pl agents -Pbeta install -DskipTests
-./api/mvnw -f api/pom.xml -Pbeta spring-boot:run
+# Start the single backend process (Maven builds api + agents library together)
+./api/mvnw -f pom.xml -pl api -am -Pbeta spring-boot:run
 
 # Web
 cd web && npm ci && npm run dev
@@ -144,7 +157,7 @@ The teacher workspace is available at `http://localhost:3000`.
 
 ### Environment variables
 
-Each component reads its configuration from `application-local.yml` (Java) or `.env.local` (Next.js). See the component READMEs for the full variable list.
+The backend reads its configuration from `application.yml` plus the selected Spring profile (`beta` or `demo`); the web app reads `.env.local`. See the component READMEs for the full variable list.
 
 - `api/` — database URL, Firebase Admin credentials, internal secret, provider API keys/model selection and CORS
 - `agents/` — no standalone runtime configuration; provider settings are owned by the backend application
