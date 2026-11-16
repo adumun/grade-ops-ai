@@ -1,0 +1,13 @@
+.git
+.github
+**/target
+**/node_modules
+**/.next
+**/coverage
+**/playwright-report
+**/test-results
+**/.env
+**/.env.*
+!**/.env.example
+**/*firebase*admin*.json
+**/*service-account*.json
