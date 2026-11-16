@@ -11,6 +11,7 @@ spring:
     enabled: false
   autoconfigure:
     exclude:
+      - org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration
       - org.springframework.ai.model.google.genai.autoconfigure.chat.GoogleGenAiChatAutoConfiguration
       - org.springframework.ai.model.google.genai.autoconfigure.embedding.GoogleGenAiEmbeddingConnectionAutoConfiguration
       - org.springframework.ai.model.google.genai.autoconfigure.embedding.GoogleGenAiTextEmbeddingAutoConfiguration
