@@ -161,25 +161,25 @@ To verify:
 psql -U gradeops -d gradeops -c "\dt"
 ```
 
-### 2g. Start the agents service when testing draft generation
+### 2g. AI capabilities run inside the API
 
-Assessment draft generation calls the internal agents service through `AGENTS_BASE_URL` (defaults to `http://localhost:8081`). Start it in a separate terminal:
+There is no separate agents service, port 8081 or `AGENTS_BASE_URL`. The `agents/` Maven module is compiled into the single Spring Boot API process. Assessment generation and code grading invoke typed use cases in-process.
+
+From the repository root, start the backend with the provider-backed profile:
 
 ```bash
-cd agents/
-SPRING_PROFILES_ACTIVE=beta ./mvnw spring-boot:run
+./api/mvnw -f pom.xml -pl api -am -Pbeta spring-boot:run
 ```
 
-For real provider calls, configure the relevant server-side keys before starting `agents/`:
+Configure the server-side provider keys in your shell or local secret manager before starting the API:
 
 | Variable | Used by |
 | --- | --- |
-| `GRADEOPS_GROQ_API_KEY` | Groq/OpenAI-compatible adapter |
-| `GRADEOPS_GROQ_MODEL` | Groq model selection |
-| `GRADEOPS_GEMINI_API_KEY` | Gemini API-key path for beta/local-like runs |
-| `GRADEOPS_GEMINI_MODEL` | Gemini model selection |
+| `GRADEOPS_DEFAULT_PROVIDER` | Default provider selection (for example `groq`) |
+| `GRADEOPS_GROQ_API_KEY` / `GRADEOPS_GROQ_MODEL` | Groq/OpenAI-compatible adapter |
+| `GRADEOPS_GEMINI_API_KEY` / `GRADEOPS_GEMINI_MODEL` | Gemini adapter |
 
-The current compatibility default in `agents/src/main/resources/application.yml` is `groq`. `AssessmentCommand.provider` may still exist for internal tests/migration, but normal product callers must not select it. The target Model Router resolves provider/model from capability, privacy, tenant, health, and authorized-budget policy; exact overrides are permission-gated and audited.
+Provider credentials never belong in the Web environment. The API owns provider selection and the durable operation/review state.
 
 ---
 
@@ -333,7 +333,7 @@ app.cors.allowed-origins:   https://gradeops.app
 | `CORS error` in browser console | `NEXT_PUBLIC_API_BASE_URL` is set, bypassing the Next.js proxy | Remove `NEXT_PUBLIC_API_BASE_URL` from `web/.env.local`. Browser calls must go to `/api/...` — the Next.js rewrite proxies them to port 8080. |
 | `401 Unauthorized` on every API request | Firebase token mismatch between projects | Verify that `NEXT_PUBLIC_FIREBASE_PROJECT_ID` in `.env.local` matches the project ID in the Firebase Admin SDK JSON used by the API. Both must point to the same Firebase project. |
 | `PORT 3000 is already in use` | Another process using port 3000 | Run `lsof -i :3000` to find the process and kill it, or start Next.js on a different port: `npm run dev -- -p 3001`. |
-| `npm install` fails with peer dependency error | Node version mismatch | Verify `node -v` returns 18 or higher. Use `nvm use 18` if you have multiple Node versions installed. |
+| `npm install` fails with peer dependency error | Node version mismatch | Verify `node -v` returns 22.12 or higher. Use the repository's Node 22 toolchain if you have multiple Node versions installed. |
 
 ---
 
