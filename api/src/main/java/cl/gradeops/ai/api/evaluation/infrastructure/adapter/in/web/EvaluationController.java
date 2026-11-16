@@ -2,6 +2,9 @@ package cl.gradeops.ai.api.evaluation.infrastructure.adapter.in.web;
 
 import cl.gradeops.ai.api.evaluation.application.command.CreateRubricDraftCommand;
 import cl.gradeops.ai.api.evaluation.application.model.RubricCriterion;
+import cl.gradeops.ai.api.evaluation.application.model.GradingProposal;
+import cl.gradeops.ai.api.evaluation.application.model.GradingReviewView;
+import cl.gradeops.ai.api.evaluation.infrastructure.adapter.in.web.request.UpdateGradingReviewRequest;
 import cl.gradeops.ai.api.evaluation.application.usecase.EvaluationService;
 import cl.gradeops.ai.api.evaluation.infrastructure.adapter.in.web.request.CreateRubricRequest;
 import cl.gradeops.ai.api.shared.infrastructure.config.security.AuthenticatedTeacher;
@@ -12,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -86,6 +90,44 @@ public class EvaluationController {
             @PathVariable UUID batchId,
             @AuthenticationPrincipal AuthenticatedTeacher teacher) {
         return evaluationService.getSubmissionBatch(batchId, teacher.uid());
+    }
+
+    @PostMapping("/submissions/{submissionId}/grading-runs")
+    @ResponseStatus(HttpStatus.CREATED)
+    public GradingReviewView gradeSubmission(
+            @PathVariable UUID submissionId,
+            @AuthenticationPrincipal AuthenticatedTeacher teacher) {
+        return evaluationService.gradeSubmission(submissionId, teacher.uid());
+    }
+
+    @GetMapping("/grading-runs/{gradingRunId}/review")
+    public GradingReviewView getGradingReview(
+            @PathVariable UUID gradingRunId,
+            @AuthenticationPrincipal AuthenticatedTeacher teacher) {
+        return evaluationService.getGradingReview(gradingRunId, teacher.uid());
+    }
+
+    @PutMapping("/grading-runs/{gradingRunId}/review")
+    public GradingReviewView updateGradingReview(
+            @PathVariable UUID gradingRunId,
+            @AuthenticationPrincipal AuthenticatedTeacher teacher,
+            @Valid @RequestBody UpdateGradingReviewRequest request) {
+        return evaluationService.updateGradingReview(
+                gradingRunId, teacher.uid(), request.editedResult(), request.teacherComment());
+    }
+
+    @PostMapping("/grading-runs/{gradingRunId}/approve")
+    public GradingReviewView approveGradingReview(
+            @PathVariable UUID gradingRunId,
+            @AuthenticationPrincipal AuthenticatedTeacher teacher) {
+        return evaluationService.approveGradingReview(gradingRunId, teacher.uid());
+    }
+
+    @GetMapping("/assessments/{assessmentId}/approved-results")
+    public List<GradingReviewView> listApprovedResults(
+            @PathVariable UUID assessmentId,
+            @AuthenticationPrincipal AuthenticatedTeacher teacher) {
+        return evaluationService.listApprovedReviews(assessmentId, teacher.uid());
     }
 
     @GetMapping("/submissions/{submissionId}/evidence")
