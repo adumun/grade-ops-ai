@@ -65,6 +65,7 @@ A decision record should explain:
 | [`2026-06-08-price-by-graded-submissions.md`](2026-06-08-price-by-graded-submissions.md) | Historical primary billing unit was the graded submission | Superseded |
 | [`2026-06-08-mermaid-diagram-standard.md`](2026-06-08-mermaid-diagram-standard.md) | Mermaid is the default diagram format; PlantUML only when Mermaid is insufficient | Accepted |
 | [`2026-06-10-closed-assessment-mode.md`](2026-06-10-closed-assessment-mode.md) | Adding closed (objective/alternatives) assessment mode alongside open mode | Accepted |
+| [`2026-11-16-p0-teacher-demo-modular-monolith.md`](2026-11-16-p0-teacher-demo-modular-monolith.md) | One Spring Boot backend deployable; agents are an in-process capability module for the P0 teacher demo | Accepted |
 | [`2026-06-10-ai-native-question-bank.md`](2026-06-10-ai-native-question-bank.md) | Question bank is AI-generated and teacher-curated, not manually authored | Accepted |
 | [`2026-06-10-assessment-snapshot-on-publish.md`](2026-06-10-assessment-snapshot-on-publish.md) | Questions, options, answer key, and scoring policy are frozen at publication | Accepted |
 | [`2026-06-10-deterministic-grading-for-closed.md`](2026-06-10-deterministic-grading-for-closed.md) | Closed assessment grading is deterministic; no AI in the scoring calculation | Accepted |
