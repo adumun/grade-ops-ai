@@ -626,14 +626,14 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
         if (reference.lineEnd() > lines.length) {
             throw new EvaluationConflictException("Evidence line range is outside the submitted file");
         }
-        String excerpt = String.join("\\n", Arrays.copyOfRange(lines, reference.lineStart() - 1, reference.lineEnd()));
+        String excerpt = String.join("\n", Arrays.copyOfRange(lines, reference.lineStart() - 1, reference.lineEnd()));
         if (!normalizeWhitespace(excerpt).contains(normalizeWhitespace(reference.excerpt()))) {
             throw new EvaluationConflictException("Evidence excerpt does not match the submitted file");
         }
     }
 
     private static String normalizeWhitespace(String value) {
-        return value == null ? "" : value.replaceAll("\\\\s+", " ").strip();
+        return value == null ? "" : value.replaceAll("\\s+", " ").strip();
     }
 
     private static GradingReviewView mapGradingReview(ResultSet rs) throws SQLException {
