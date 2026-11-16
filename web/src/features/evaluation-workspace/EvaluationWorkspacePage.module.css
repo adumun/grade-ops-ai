@@ -1,5 +1,6 @@
 .workspace { width: 100%; max-width: 1320px; margin: 0 auto; display: grid; gap: 22px; color: var(--text-body); }
 .textLink { display: inline-flex; align-items: center; gap: 5px; color: var(--brand); text-decoration: none; font-size: 13px; font-weight: 600; }
+.linkButton { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 16px; border-radius: var(--radius-md); color: #fff; background: var(--brand); text-decoration: none; font-size: 13px; font-weight: 600; }
 .introCard { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 18px; padding: 22px 24px; border: 1px solid var(--sprout-200); border-radius: 18px; background: linear-gradient(115deg, var(--surface-brand-soft), var(--surface-card) 65%); box-shadow: var(--shadow-sm); }
 .introIcon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 15px; color: var(--brand); background: var(--surface-card); box-shadow: var(--shadow-sm); }
 .introCopy > span,.kicker { color: var(--brand); font-size: 10px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
