@@ -40,6 +40,10 @@ Unit -> Topic -> Learning Objective -> Criteria -> Cohort/Student evidence
 
 GradeOps compares planned, taught, assessed, demonstrated, and action layers without collapsing coverage, achievement, and evidence sufficiency into one metric.
 
+## P0 Teacher Demo — November 2026
+
+The accelerated teacher validation slice is indexed in [01-product](01-product/README.md), with the delivery plan in [2026-11-16-p0-teacher-demo-delivery-plan.md](01-product/2026-11-16-p0-teacher-demo-delivery-plan.md). The single-backend decision is recorded in [ADR-018](99-decisions/2026-11-16-p0-teacher-demo-modular-monolith.md).
+
 ## Current Implementation vs Target
 
 The repository contains an existing vertical slice and historical programming-focused contracts. The approved target is defined by [the 2026-07-27 redesign decision](99-decisions/2026-07-27-assessment-operations-product-redesign.md). Existing code must be classified as reusable, adaptable, incompatible, absent, or obsolete before migration planning. Do not infer that a target capability is implemented merely because it is documented here.
