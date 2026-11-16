@@ -12,9 +12,9 @@
 
 ## Runtime boundary
 
-The only Spring Boot application is `api/`. The API includes this module in its application context and invokes `GenerateAssessmentDraftUseCase` (and future rubric/grading use cases) in-process. The API owns transaction boundaries, durable `AiOperation`/`AgentAttempt` records, assessment state and teacher approval.
+The only Spring Boot application is `api/`. The API includes this module in its application context and invokes `GenerateAssessmentDraftUseCase` and `GradeSubmissionUseCase` in-process. The API owns transaction boundaries, durable `AiOperation`/`AgentAttempt` records, assessment state and teacher approval.
 
-The module deliberately has no standalone server port, application configuration file, Docker image or deployment workflow.
+The module deliberately has no standalone application bootstrap, HTTP server, application configuration file, Docker image or deployment workflow.
 
 ## Build
 
@@ -33,9 +33,11 @@ The Maven profiles provide the Spring AI model starters. The API reactor include
 
 ## Package boundaries
 
-- `assessment/application`: typed commands, use cases, orchestration, result and execution-evidence contracts.
-- `assessment/infrastructure/adapter/out`: provider adapters.
+- `assessment/application`: assessment-draft commands, orchestration, results and execution evidence.
+- `grading/application`: code-grading commands, rubric criteria, evidence validation and teacher-facing proposal results.
+- `shared/application/port/out`: provider-neutral structured-generation contract and provider selector.
+- `assessment/infrastructure/adapter/out`: Gemini and Groq structured-generation adapters.
 - `assessment/infrastructure/config`: Spring bean wiring and provider selection.
-- `assessment/infrastructure/adapter/in/web`: historical HTTP adapter retained only as source during migration; it is not included in the API component scan or exposed by the monolith.
+- `src/main/resources/prompts`: versioned assessment and grading prompt templates.
 
 See [the P0 modular-monolith ADR](../docs/99-decisions/2026-11-16-p0-teacher-demo-modular-monolith.md).
