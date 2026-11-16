@@ -201,8 +201,23 @@ export default function DraftBuilderPage({ params }: DraftBuilderPageProps) {
           </p>
         </div>
         {!data.isViewingHistoricalVersion && !isBlockedByConflict && (
-          <Link href={`/assessments/${id}/grading`}>
-            <Button variant="primary">Preparar revisión de código</Button>
+          <Link
+            href={`/assessments/${id}/grading`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: 40,
+              padding: "0 16px",
+              borderRadius: "var(--radius-md)",
+              color: "#fff",
+              background: "var(--brand)",
+              textDecoration: "none",
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            Preparar revisión de código
           </Link>
         )}
       </div>
