@@ -39,36 +39,23 @@ Built as a **Spring Boot 4 modular monolith** on Java 21, the backend exposes:
 ## Architecture
 
 ```
-grade-ops-ai-web  ──── Bearer <firebase_id_token> ────►  /api/**
-grade-ops-ai-agents ── X-Internal-Secret: <secret> ───►  /internal/**
-                                                               │
-                                                    ┌──────────▼──────────────┐
-                                                    │   Spring Security        │
-                                                    │   Filter Chain           │
-                                                    │                          │
-                                                    │  InternalAuthFilter      │
-                                                    │       ↓                  │
-                                                    │  FirebaseTokenFilter     │
-                                                    │       ↓                  │
-                                                    │  EmailVerifiedFilter     │
-                                                    │       ↓                  │
-                                                    │  Controllers / Services  │
-                                                    └──────────┬───────────────┘
-                                                               │
-                                                    ┌──────────▼──────────────┐
-                                                    │   Cloud SQL             │
-                                                    │   PostgreSQL 15         │
-                                                    │   (Flyway migrations)   │
-                                                    └─────────────────────────┘
+Next.js Web  ─── Bearer <firebase_id_token> ───►  Spring Boot backend
+                                                  ├── Public API / domain workflows
+                                                  ├── PostgreSQL persistence / Flyway
+                                                  └── In-process Spring AI module
+                                                        ├── Gemini / Groq adapters
+                                                        └── Versioned prompts + typed results
 ```
+
+The `agents/` Maven module is packaged as a library dependency of `api/`. It is invoked in-process through typed application contracts. The API owns durable AI operation/attempt records, domain state, transaction boundaries and teacher approval. There is no second agent server, loopback HTTP call or independent agent deployment in the P0 architecture.
 
 **Filter chain responsibilities:**
 
 | Filter | Path | Responsibility |
 |--------|------|---------------|
-| `InternalAuthFilter` | `/internal/**` | Validates `X-Internal-Secret` header; rejects with 403 if missing or wrong |
-| `FirebaseTokenFilter` | `/api/**` | Verifies Firebase ID token via Admin SDK; populates `AuthenticatedTeacher` principal and sets `firebaseToken` request attribute |
-| `EmailVerifiedFilter` | `/api/**` | Reads `firebaseToken` attribute; rejects with 403 if `email_verified` is false |
+| `InternalAuthFilter` | `/internal/**` | Validates the operator shared-secret header; rejects with 403 if missing or wrong |
+| `FirebaseTokenFilter` | `/api/**` | Verifies Firebase ID token via Admin SDK and populates the authenticated teacher principal |
+| `EmailVerifiedFilter` | `/api/**` | Blocks unverified accounts before they reach protected endpoints |
 
 ---
 
@@ -182,6 +169,11 @@ DATABASE_PASSWORD=gradeops
 
 # Internal API — operator-only shared secret
 INTERNAL_API_SECRET=change-me-in-development
+GRADEOPS_DEFAULT_PROVIDER=groq
+GRADEOPS_GROQ_API_KEY=...
+GRADEOPS_GROQ_MODEL=llama-3.3-70b-versatile
+GRADEOPS_GEMINI_API_KEY=...
+GRADEOPS_GEMINI_MODEL=gemini-2.0-flash
 
 # Spring AI providers (select the configured provider with GRADEOPS_DEFAULT_PROVIDER)
 GRADEOPS_DEFAULT_PROVIDER=groq
@@ -215,7 +207,12 @@ createdb gradeops
 ./mvnw spring-boot:run -Dspring.profiles.active=local
 ```
 
-The API starts on **http://localhost:8080**.
+The backend starts on **http://localhost:8080**. From the repository root, install the capability module and run the single API application:
+
+```bash
+./api/mvnw -f pom.xml -pl agents -Pbeta install -DskipTests
+./api/mvnw -f api/pom.xml -Pbeta spring-boot:run
+```
 
 ---
 
