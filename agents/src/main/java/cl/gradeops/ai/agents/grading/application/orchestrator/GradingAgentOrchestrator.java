@@ -41,7 +41,7 @@ public class GradingAgentOrchestrator {
     private static final String AGENT_NAME = "grading";
     private static final int MAX_CRITERIA = 20;
     private static final int MAX_FILES = 120;
-    private static final int MAX_EVIDENCE_CHARACTERS = 80_000;
+    private static final int MAX_EVIDENCE_CHARACTERS = 160_000;
 
     private final StructuredGenerationPortSelector selector;
     private final Map<String, Double> costPerKTokensByProvider;
@@ -177,8 +177,9 @@ public class GradingAgentOrchestrator {
             template.add("objectives", command.objectives() == null ? List.of() : command.objectives());
             template.add("totalPoints", command.totalPoints());
             template.add("rubricJson", jsonMapper.writeValueAsString(command.criteria()));
-            template.add("evidenceBundle", buildEvidenceBundle(command.files()));
+            template.add("evidenceBundle", buildEvidenceBundle(command.files(), command.truncatedFilePaths()));
             template.add("omittedFilePaths", command.omittedFilePaths() == null ? List.of() : command.omittedFilePaths());
+            template.add("truncatedFilePaths", command.truncatedFilePaths() == null ? List.of() : command.truncatedFilePaths());
             template.add("evidenceTruncated", command.evidenceTruncated());
             return template.render();
         } catch (Exception exception) {
