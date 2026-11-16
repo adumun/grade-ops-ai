@@ -84,6 +84,7 @@ class GradingAgentOrchestratorTest {
                 COMMAND.criteria(),
                 COMMAND.files(),
                 List.of("src/Additional.java"),
+                List.of(),
                 true,
                 COMMAND.provider(),
                 COMMAND.model());
