@@ -3,6 +3,13 @@ package cl.gradeops.ai.api.evaluation.infrastructure.adapter.out.persistence;
 import cl.gradeops.ai.api.evaluation.application.command.CreateRubricDraftCommand;
 import cl.gradeops.ai.api.evaluation.application.exception.EvaluationConflictException;
 import cl.gradeops.ai.api.evaluation.application.model.RubricCriterion;
+import cl.gradeops.ai.api.evaluation.application.model.GradingAgentResult;
+import cl.gradeops.ai.api.evaluation.application.model.GradingContext;
+import cl.gradeops.ai.api.evaluation.application.model.GradingCriterionSuggestion;
+import cl.gradeops.ai.api.evaluation.application.model.GradingExecutionMetadata;
+import cl.gradeops.ai.api.evaluation.application.model.GradingProposal;
+import cl.gradeops.ai.api.evaluation.application.model.GradingReviewView;
+import cl.gradeops.ai.api.evaluation.application.model.GradingEvidenceReference;
 import cl.gradeops.ai.api.evaluation.application.model.RubricView;
 import cl.gradeops.ai.api.evaluation.application.model.SubmissionBatchView;
 import cl.gradeops.ai.api.evaluation.application.model.SubmissionCandidate;
@@ -20,6 +27,11 @@ import tools.jackson.databind.json.JsonMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.List;
 import java.util.UUID;
 
@@ -257,6 +269,352 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
 
         return new SubmissionEvidenceView(
                 header.id(), header.learnerLabel(), header.sourceDirectory(), header.status(), files);
+    }
+
+
+    @Override
+    public GradingContext getGradingContext(UUID submissionId, String teacherUid) {
+        assertSubmissionOwner(submissionId, teacherUid);
+        GradingContextHeader header;
+        try {
+            header = jdbc.queryForObject("""
+                    SELECT a.id AS assessment_id, s.id AS submission_id, rv.id AS rubric_version_id,
+                           r.title AS assessment_title, r.context AS assessment_context,
+                           r.instructions AS assessment_instructions, r.objectives::text AS objectives,
+                           rv.total_points, rv.criteria::text AS criteria, s.learner_label
+                    FROM submissions s
+                    JOIN submission_batches b ON b.id = s.batch_id
+                    JOIN assessments a ON a.id = b.assessment_id
+                    JOIN assessment_revisions r ON r.id = a.current_revision_id
+                    JOIN assessment_rubric_versions rv
+                      ON rv.assessment_id = a.id
+                     AND rv.assessment_revision_id = r.id
+                     AND rv.status = 'APPROVED'
+                    WHERE s.id = ? AND a.teacher_uid = ?
+                    ORDER BY rv.version_number DESC
+                    LIMIT 1
+                    """,
+                    (rs, row) -> new GradingContextHeader(
+                            rs.getObject("assessment_id", UUID.class),
+                            rs.getObject("submission_id", UUID.class),
+                            rs.getObject("rubric_version_id", UUID.class),
+                            rs.getString("assessment_title"),
+                            rs.getString("assessment_context"),
+                            rs.getString("assessment_instructions"),
+                            readStrings(rs.getString("objectives")),
+                            rs.getBigDecimal("total_points"),
+                            readCriteria(rs.getString("criteria")),
+                            rs.getString("learner_label")),
+                    submissionId,
+                    teacherUid);
+        } catch (EmptyResultDataAccessException exception) {
+            throw new EvaluationConflictException(
+                    "The submission cannot be graded until an approved rubric exists for the current assessment revision");
+        }
+
+        List<SubmissionFileEvidence> files = jdbc.query("""
+                SELECT relative_path, media_type, size_bytes, sha256, classification, extracted_text
+                FROM submission_files
+                WHERE submission_id = ?
+                ORDER BY relative_path
+                """,
+                (rs, row) -> new SubmissionFileEvidence(
+                        rs.getString("relative_path"),
+                        rs.getString("media_type"),
+                        rs.getLong("size_bytes"),
+                        rs.getString("sha256"),
+                        rs.getString("classification"),
+                        rs.getString("extracted_text")),
+                submissionId);
+
+        return new GradingContext(
+                header.assessmentId(),
+                header.submissionId(),
+                header.rubricVersionId(),
+                header.assessmentTitle(),
+                header.assessmentContext(),
+                header.assessmentInstructions(),
+                header.objectives(),
+                header.totalPoints(),
+                header.criteria(),
+                header.learnerLabel(),
+                files);
+    }
+
+    @Override
+    @Transactional
+    public UUID startGradingRun(GradingContext context, String teacherUid, Instant startedAt) {
+        assertAssessmentOwner(context.assessmentId(), teacherUid);
+        Integer owned = jdbc.queryForObject("""
+                SELECT COUNT(*)
+                FROM submissions s
+                JOIN submission_batches b ON b.id = s.batch_id
+                WHERE s.id = ? AND b.assessment_id = ?
+                """, Integer.class, context.submissionId(), context.assessmentId());
+        if (owned == null || owned == 0) {
+            throw new ResourceNotFoundException(context.submissionId().toString());
+        }
+
+        UUID runId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO grading_runs
+                    (id, assessment_id, submission_id, rubric_version_id, status, started_at)
+                VALUES (?, ?, ?, ?, 'PENDING', ?)
+                """,
+                runId, context.assessmentId(), context.submissionId(), context.rubricVersionId(), Timestamp.from(startedAt));
+        return runId;
+    }
+
+    @Override
+    @Transactional
+    public GradingReviewView completeGradingRun(UUID gradingRunId, GradingAgentResult result, String teacherUid) {
+        GradingExecutionMetadata execution = result.execution();
+        String proposalJson = writeJson(result.proposal());
+        int updated = jdbc.update("""
+                UPDATE grading_runs
+                SET status = 'COMPLETED', proposal = ?::jsonb, provider = ?, model = ?, prompt_version = ?,
+                    input_hash = ?, output_hash = ?, estimated_input_tokens = ?, estimated_output_tokens = ?,
+                    cost_estimate = ?, error_code = ?, finished_at = ?
+                WHERE id = ? AND status = 'PENDING'
+                """,
+                proposalJson,
+                execution.provider(),
+                execution.model(),
+                execution.promptVersion(),
+                execution.inputHash(),
+                execution.outputHash(),
+                execution.estimatedInputTokens(),
+                execution.estimatedOutputTokens(),
+                execution.costEstimate(),
+                execution.errorCode(),
+                execution.finishedAt() == null ? Timestamp.from(Instant.now()) : Timestamp.from(execution.finishedAt()),
+                gradingRunId);
+        if (updated != 1) {
+            throw new EvaluationConflictException("Grading run is no longer pending");
+        }
+
+        UUID reviewId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO grading_reviews (id, grading_run_id, status, edited_result)
+                VALUES (?, ?, 'DRAFT', ?::jsonb)
+                """, reviewId, gradingRunId, proposalJson);
+        jdbc.update("""
+                UPDATE submissions SET status = 'GRADED'
+                WHERE id = (SELECT submission_id FROM grading_runs WHERE id = ?)
+                """, gradingRunId);
+        insertReviewEvent(reviewId, "SYSTEM:AI", "AI_PROPOSAL_CREATED", result.proposal());
+        return getGradingReview(gradingRunId, teacherUid);
+    }
+
+    @Override
+    @Transactional
+    public void failGradingRun(UUID gradingRunId, GradingExecutionMetadata execution) {
+        jdbc.update("""
+                UPDATE grading_runs
+                SET status = 'FAILED', provider = ?, model = ?, prompt_version = ?, input_hash = ?,
+                    output_hash = ?, estimated_input_tokens = ?, estimated_output_tokens = ?, cost_estimate = ?,
+                    error_code = ?, finished_at = ?
+                WHERE id = ? AND status = 'PENDING'
+                """,
+                execution.provider(),
+                execution.model(),
+                execution.promptVersion(),
+                execution.inputHash(),
+                execution.outputHash(),
+                execution.estimatedInputTokens(),
+                execution.estimatedOutputTokens(),
+                execution.costEstimate(),
+                execution.errorCode(),
+                execution.finishedAt() == null ? Timestamp.from(Instant.now()) : Timestamp.from(execution.finishedAt()),
+                gradingRunId);
+    }
+
+    @Override
+    public GradingReviewView getGradingReview(UUID gradingRunId, String teacherUid) {
+        try {
+            return jdbc.queryForObject("""
+                    SELECT r.id AS review_id, gr.id AS grading_run_id, s.id AS submission_id,
+                           s.learner_label, r.status AS review_status, gr.proposal::text AS proposal,
+                           r.edited_result::text AS edited_result, r.final_score, r.teacher_comment,
+                           gr.provider, gr.model, gr.prompt_version, gr.input_hash, gr.output_hash,
+                           gr.estimated_input_tokens, gr.estimated_output_tokens, gr.cost_estimate,
+                           gr.status AS execution_status, gr.error_code, gr.started_at, gr.finished_at,
+                           r.approved_by, r.approved_at
+                    FROM grading_reviews r
+                    JOIN grading_runs gr ON gr.id = r.grading_run_id
+                    JOIN submissions s ON s.id = gr.submission_id
+                    JOIN submission_batches b ON b.id = s.batch_id
+                    JOIN assessments a ON a.id = b.assessment_id
+                    WHERE gr.id = ? AND a.teacher_uid = ?
+                    """,
+                    (rs, row) -> mapGradingReview(rs),
+                    gradingRunId,
+                    teacherUid);
+        } catch (EmptyResultDataAccessException exception) {
+            throw new ResourceNotFoundException(gradingRunId.toString());
+        }
+    }
+
+    @Override
+    @Transactional
+    public GradingReviewView updateGradingReview(
+            UUID gradingRunId, String teacherUid, GradingProposal editedResult, String teacherComment) {
+        GradingReviewView current = getGradingReview(gradingRunId, teacherUid);
+        if (!"DRAFT".equals(current.status())) {
+            throw new EvaluationConflictException("Only a draft grading review can be edited");
+        }
+        BigDecimal finalScore = validateAndCalculateScore(editedResult);
+        String editedJson = writeJson(editedResult);
+        int updated = jdbc.update("""
+                UPDATE grading_reviews
+                SET edited_result = ?::jsonb, final_score = ?, teacher_comment = ?, updated_at = now()
+                WHERE grading_run_id = ? AND status = 'DRAFT'
+                """, editedJson, finalScore, teacherComment, gradingRunId);
+        if (updated != 1) {
+            throw new EvaluationConflictException("Grading review changed while the teacher edit was being saved");
+        }
+        insertReviewEvent(current.id(), teacherUid, "TEACHER_EDITED", Map.of(
+                "editedResult", editedResult,
+                "teacherComment", teacherComment == null ? "" : teacherComment,
+                "finalScore", finalScore));
+        return getGradingReview(gradingRunId, teacherUid);
+    }
+
+    @Override
+    @Transactional
+    public GradingReviewView approveGradingReview(UUID gradingRunId, String teacherUid) {
+        GradingReviewView current = getGradingReview(gradingRunId, teacherUid);
+        if (!"DRAFT".equals(current.status()) || current.finalScore() == null) {
+            throw new EvaluationConflictException("A teacher-edited grading result must be saved before approval");
+        }
+        int updated = jdbc.update("""
+                UPDATE grading_reviews
+                SET status = 'APPROVED', approved_by = ?, approved_at = now(), updated_at = now()
+                WHERE grading_run_id = ? AND status = 'DRAFT' AND final_score IS NOT NULL
+                """, teacherUid, gradingRunId);
+        if (updated != 1) {
+            throw new EvaluationConflictException("Grading review changed while approval was being recorded");
+        }
+        jdbc.update("UPDATE submissions SET status = 'APPROVED' WHERE id = ?", current.submissionId());
+        insertReviewEvent(current.id(), teacherUid, "TEACHER_APPROVED",
+                Map.of("finalScore", current.finalScore(), "approved", true));
+        return getGradingReview(gradingRunId, teacherUid);
+    }
+
+    @Override
+    public List<GradingReviewView> listApprovedReviews(UUID assessmentId, String teacherUid) {
+        assertAssessmentOwner(assessmentId, teacherUid);
+        List<UUID> runIds = jdbc.query("""
+                SELECT gr.id
+                FROM grading_runs gr
+                JOIN grading_reviews r ON r.grading_run_id = gr.id
+                WHERE gr.assessment_id = ? AND r.status = 'APPROVED'
+                ORDER BY gr.started_at, gr.submission_id
+                """, (rs, row) -> rs.getObject(1, UUID.class), assessmentId);
+        return runIds.stream().map(id -> getGradingReview(id, teacherUid)).toList();
+    }
+
+    private void assertSubmissionOwner(UUID submissionId, String teacherUid) {
+        Integer count = jdbc.queryForObject("""
+                SELECT COUNT(*)
+                FROM submissions s
+                JOIN submission_batches b ON b.id = s.batch_id
+                JOIN assessments a ON a.id = b.assessment_id
+                WHERE s.id = ? AND a.teacher_uid = ?
+                """, Integer.class, submissionId, teacherUid);
+        if (count == null || count == 0) {
+            throw new ResourceNotFoundException(submissionId.toString());
+        }
+    }
+
+    private void insertReviewEvent(UUID reviewId, String actorUid, String eventType, Object payload) {
+        jdbc.update("""
+                INSERT INTO grading_review_events (id, review_id, actor_uid, event_type, payload)
+                VALUES (?, ?, ?, ?, ?::jsonb)
+                """, UUID.randomUUID(), reviewId, actorUid, eventType, writeJson(payload));
+    }
+
+    private static BigDecimal validateAndCalculateScore(GradingProposal proposal) {
+        if (proposal == null || proposal.criteria() == null || proposal.criteria().isEmpty()) {
+            throw new EvaluationConflictException("At least one criterion result is required");
+        }
+        Set<String> seen = new HashSet<>();
+        BigDecimal total = BigDecimal.ZERO;
+        for (GradingCriterionSuggestion criterion : proposal.criteria()) {
+            if (criterion == null || criterion.criterionId() == null || !seen.add(criterion.criterionId())
+                    || criterion.maxPoints() == null || criterion.suggestedPoints() == null
+                    || criterion.suggestedPoints().signum() < 0
+                    || criterion.suggestedPoints().compareTo(criterion.maxPoints()) > 0) {
+                throw new EvaluationConflictException("Criterion scores are invalid or exceed the rubric maximum");
+            }
+            total = total.add(criterion.suggestedPoints());
+        }
+        return total;
+    }
+
+    private static GradingReviewView mapGradingReview(ResultSet rs) throws SQLException {
+        return new GradingReviewView(
+                rs.getObject("review_id", UUID.class),
+                rs.getObject("grading_run_id", UUID.class),
+                rs.getObject("submission_id", UUID.class),
+                rs.getString("learner_label"),
+                rs.getString("review_status"),
+                readProposal(rs.getString("proposal")),
+                readProposal(rs.getString("edited_result")),
+                rs.getBigDecimal("final_score"),
+                rs.getString("teacher_comment"),
+                new GradingExecutionMetadata(
+                        rs.getString("provider"),
+                        rs.getString("model"),
+                        rs.getString("prompt_version"),
+                        rs.getString("input_hash"),
+                        rs.getString("output_hash"),
+                        (Integer) rs.getObject("estimated_input_tokens"),
+                        (Integer) rs.getObject("estimated_output_tokens"),
+                        (Double) rs.getObject("cost_estimate"),
+                        rs.getString("execution_status"),
+                        rs.getString("error_code"),
+                        instant(rs.getTimestamp("started_at")),
+                        instant(rs.getTimestamp("finished_at"))),
+                rs.getString("approved_by"),
+                instant(rs.getTimestamp("approved_at")));
+    }
+
+    private static GradingProposal readProposal(String json) {
+        try {
+            return JSON_MAPPER.readValue(json, GradingProposal.class);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Stored grading proposal is not valid JSON", exception);
+        }
+    }
+
+    private static List<String> readStrings(String json) {
+        try {
+            return List.of(JSON_MAPPER.readValue(json, String[].class));
+        } catch (Exception exception) {
+            throw new IllegalStateException("Stored assessment objectives are not valid JSON", exception);
+        }
+    }
+
+    private static List<RubricCriterion> readCriteria(String json) {
+        try {
+            return List.of(JSON_MAPPER.readValue(json, RubricCriterion[].class));
+        } catch (Exception exception) {
+            throw new IllegalStateException("Stored rubric criteria are not valid JSON", exception);
+        }
+    }
+
+    private record GradingContextHeader(
+            UUID assessmentId,
+            UUID submissionId,
+            UUID rubricVersionId,
+            String assessmentTitle,
+            String assessmentContext,
+            String assessmentInstructions,
+            List<String> objectives,
+            BigDecimal totalPoints,
+            List<RubricCriterion> criteria,
+            String learnerLabel) {
     }
 
     private UUID lockCurrentRevision(UUID assessmentId, String teacherUid) {
