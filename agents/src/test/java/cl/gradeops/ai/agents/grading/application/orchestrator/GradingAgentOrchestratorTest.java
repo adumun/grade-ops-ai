@@ -62,6 +62,42 @@ class GradingAgentOrchestratorTest {
     }
 
     @Test
+    void surfacesWhenEvidenceWasTruncatedToFitTheModelBudget() {
+        GradingResult result = new GradingResult(
+                List.of(new GradingResult.CriterionSuggestion(
+                        "criterion-1",
+                        new BigDecimal("8"),
+                        "The available source evidence demonstrates the loop.",
+                        List.of(new GradingResult.EvidenceReference(
+                                "src/Main.java", 1, 1, "int total = 0;")),
+                        "Other source files were omitted from this run.",
+                        "MEDIUM")),
+                "Review the complete project before finalizing.",
+                "Only a bounded subset of source files was inspected.",
+                List.of());
+        GradingCommand truncatedCommand = new GradingCommand(
+                COMMAND.assessmentTitle(),
+                COMMAND.context(),
+                COMMAND.instructions(),
+                COMMAND.objectives(),
+                COMMAND.totalPoints(),
+                COMMAND.criteria(),
+                COMMAND.files(),
+                List.of("src/Additional.java"),
+                true,
+                COMMAND.provider(),
+                COMMAND.model());
+
+        GradingAgentOrchestrator orchestrator = orchestrator(result);
+        orchestrator.loadTemplate();
+
+        var outcome = orchestrator.grade(truncatedCommand);
+
+        assertThat(outcome.result().reviewFlags()).contains("EVIDENCE_TRUNCATED");
+        assertThat(outcome.result().uncertaintySummary()).contains("omitted");
+    }
+
+    @Test
     void rejectsEvidenceThatDoesNotExistInSubmittedFiles() {
         GradingResult result = new GradingResult(
                 List.of(new GradingResult.CriterionSuggestion(
