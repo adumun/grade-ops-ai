@@ -1,6 +1,5 @@
 package cl.gradeops.ai.api.assessment.application.usecase;
 
-import cl.gradeops.ai.api.agentclient.AgentClientProperties;
 import cl.gradeops.ai.api.assessment.application.command.GetGenerationStatusCommand;
 import cl.gradeops.ai.api.assessment.application.port.in.GetGenerationStatusUseCase;
 import cl.gradeops.ai.api.assessment.application.port.out.AgentAttemptRepositoryPort;
@@ -43,7 +42,7 @@ import java.util.Optional;
 public class GetGenerationStatusHandler implements GetGenerationStatusUseCase {
 
     private static final AiOperationType OPERATION_TYPE = AiOperationType.CREATE_INITIAL_REVISION;
-    private static final Duration INDETERMINATE_THRESHOLD = AgentClientProperties.READ_TIMEOUT.multipliedBy(5);
+    private static final Duration INDETERMINATE_THRESHOLD = AiOperationTiming.INDETERMINATE_AFTER;
 
     private final AssessmentRepositoryPort assessmentRepository;
     private final AiOperationRepositoryPort aiOperationRepository;
