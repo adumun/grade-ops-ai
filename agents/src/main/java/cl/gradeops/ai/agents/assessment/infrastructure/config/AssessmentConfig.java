@@ -26,7 +26,7 @@ import org.springframework.context.annotation.Configuration;
  * wiring conventions — none of the classes wired here carry {@code @Service}/{@code
  * @Component}.
  *
- * <p>Gated on {@code app.agents.gemini.enabled} (default {@code true}) rather than on {@code
+ * <p>Gated on {@code app.agents.enabled} (default {@code true}) rather than on {@code
  * ChatClient.Builder} being present: a {@code @ConditionalOnBean} check here would be evaluated
  * before Spring AI's own autoconfiguration has had a chance to register that bean, since this
  * is a regular component-scanned {@code @Configuration}, not an auto-configuration class with
@@ -54,7 +54,7 @@ import org.springframework.context.annotation.Configuration;
  * enabled while the other is disabled, so a second, per-provider flag would be speculative.
  */
 @Configuration
-@ConditionalOnProperty(prefix = "app.agents.gemini", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "app.agents", name = "enabled", havingValue = "true", matchIfMissing = false)
 class AssessmentConfig {
 
     @Value("${app.agents.llm.default-provider}")
