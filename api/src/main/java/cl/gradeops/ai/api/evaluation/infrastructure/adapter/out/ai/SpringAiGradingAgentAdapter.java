@@ -40,9 +40,10 @@ public class SpringAiGradingAgentAdapter implements GradingAgentPort {
             if (!"TEXT".equals(file.classification()) || file.extractedText() == null) {
                 continue;
             }
-            if (file.extractedText().length() <= evidenceBudget) {
+            if (fileBudget > 0 && file.extractedText().length() <= evidenceBudget) {
                 files.add(new SubmissionFile(file.path(), file.extractedText()));
                 evidenceBudget -= file.extractedText().length();
+                fileBudget--;
             } else {
                 omittedFilePaths.add(file.path());
             }
