@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useShellConfig } from "@/components/shell/ShellContext";
 import Page from "@/components/shell/Page";
@@ -103,7 +103,7 @@ export default function EvaluationWorkspacePage({ assessmentId }: { assessmentId
   );
   const selectedSubmission = activeBatch?.submissions.find((submission) => submission.id === selectedSubmissionId) ?? null;
 
-  async function loadSubmission(submissionId: string) {
+  const loadSubmission = useCallback(async (submissionId: string) => {
     setSelectedSubmissionId(submissionId);
     setEvidence(null);
     setReview(null);
@@ -117,7 +117,7 @@ export default function EvaluationWorkspacePage({ assessmentId }: { assessmentId
     setReview(nextReview);
     setEditedProposal(nextReview?.editedResult ?? null);
     setTeacherComment(nextReview?.teacherComment ?? "");
-  }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -165,7 +165,7 @@ export default function EvaluationWorkspacePage({ assessmentId }: { assessmentId
     }
     void load();
     return () => { cancelled = true; };
-  }, [assessmentId]);
+  }, [assessmentId, loadSubmission]);
 
   function updateCriterion(index: number, patch: Partial<RubricCriterionDto>) {
     setRubricForm((current) => ({
