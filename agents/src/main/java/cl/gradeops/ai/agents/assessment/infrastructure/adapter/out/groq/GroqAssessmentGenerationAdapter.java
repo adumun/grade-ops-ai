@@ -44,7 +44,7 @@ public class GroqAssessmentGenerationAdapter implements AssessmentGenerationPort
             String renderedPrompt, String model, Class<T> responseType) {
         ChatClient.ChatClientRequestSpec requestSpec = chatClient.prompt(renderedPrompt);
         if (model != null) {
-            requestSpec = requestSpec.options(OpenAiChatOptions.builder().model(model));
+            requestSpec = requestSpec.options(OpenAiChatOptions.builder().model(model).build());
         }
         ResponseEntity<ChatResponse, T> responseEntity =
                 requestSpec.call().responseEntity(responseType);
