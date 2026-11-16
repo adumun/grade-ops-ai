@@ -116,7 +116,7 @@ export interface GradingReviewDto {
   gradingRunId: string;
   submissionId: string;
   learnerLabel: string;
-  status: "DRAFT" | "APPROVED";
+  status: "DRAFT" | "APPROVED" | "SUPERSEDED";
   proposal: GradingProposalDto;
   editedResult: GradingProposalDto;
   finalScore: number | null;
