@@ -15,6 +15,7 @@ public record GradingCommand(
         List<GradingCriterion> criteria,
         List<SubmissionFile> files,
         List<String> omittedFilePaths,
+        List<String> truncatedFilePaths,
         boolean evidenceTruncated,
         String provider,
         String model) {
