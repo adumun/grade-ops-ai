@@ -16,6 +16,7 @@ public record CreateRubricRequest(
         @NotEmpty @Size(max = 20) List<@Valid CriterionRequest> criteria) {
 
     public record CriterionRequest(
+            String id,
             @NotBlank @Size(max = 120) String name,
             @NotBlank @Size(max = 2000) String description,
             @NotNull @DecimalMin("0.01") BigDecimal maxPoints,
