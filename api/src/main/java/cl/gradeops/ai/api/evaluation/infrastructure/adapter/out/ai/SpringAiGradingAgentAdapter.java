@@ -32,18 +32,32 @@ public class SpringAiGradingAgentAdapter implements GradingAgentPort {
     @Override
     public GradingAgentResult grade(GradingContext context) {
         Instant startedAt = Instant.now();
-        int evidenceBudget = 80_000;
+        int evidenceBudget = 160_000;
         int fileBudget = 120;
         List<SubmissionFile> files = new java.util.ArrayList<>();
         List<String> omittedFilePaths = new java.util.ArrayList<>();
+        List<String> truncatedFilePaths = new java.util.ArrayList<>();
         for (var file : context.files()) {
             if (!"TEXT".equals(file.classification()) || file.extractedText() == null) {
                 continue;
             }
-            if (fileBudget > 0 && file.extractedText().length() <= evidenceBudget) {
+            if (fileBudget <= 0) {
+                omittedFilePaths.add(file.path());
+            } else if (file.extractedText().length() <= evidenceBudget) {
                 files.add(new SubmissionFile(file.path(), file.extractedText()));
                 evidenceBudget -= file.extractedText().length();
                 fileBudget--;
+            } else if (evidenceBudget > 256) {
+                String prefix = file.extractedText().substring(0, evidenceBudget);
+                int lastCompleteLine = prefix.lastIndexOf('\\n');
+                if (lastCompleteLine > 0) {
+                    files.add(new SubmissionFile(file.path(), prefix.substring(0, lastCompleteLine)));
+                    truncatedFilePaths.add(file.path());
+                    evidenceBudget = 0;
+                    fileBudget--;
+                } else {
+                    omittedFilePaths.add(file.path());
+                }
             } else {
                 omittedFilePaths.add(file.path());
             }
@@ -75,7 +89,8 @@ public class SpringAiGradingAgentAdapter implements GradingAgentPort {
                 criteria,
                 files,
                 omittedFilePaths,
-                !omittedFilePaths.isEmpty(),
+                truncatedFilePaths,
+                !omittedFilePaths.isEmpty() || !truncatedFilePaths.isEmpty(),
                 null,
                 null);
 
