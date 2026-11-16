@@ -124,10 +124,11 @@ public class EvaluationController {
     }
 
     @GetMapping("/submissions/{submissionId}/latest-review")
-    public GradingReviewView getLatestGradingReview(
+    public ResponseEntity<GradingReviewView> getLatestGradingReview(
             @PathVariable UUID submissionId,
             @AuthenticationPrincipal AuthenticatedTeacher teacher) {
-        return evaluationService.getLatestGradingReview(submissionId, teacher.uid());
+        GradingReviewView review = evaluationService.getLatestGradingReview(submissionId, teacher.uid());
+        return review == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(review);
     }
 
     @PostMapping("/submissions/{submissionId}/grading-runs")
