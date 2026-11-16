@@ -54,6 +54,12 @@ public class EvaluationService {
         return repository.listRubrics(assessmentId, teacherUid);
     }
 
+    public RubricView updateRubricDraft(
+            UUID assessmentId, UUID rubricId, String teacherUid, CreateRubricDraftCommand command) {
+        validateRubric(command);
+        return repository.updateRubricDraft(assessmentId, rubricId, teacherUid, command);
+    }
+
     public RubricView approveRubric(UUID assessmentId, UUID rubricId, String teacherUid) {
         return repository.approveRubric(assessmentId, rubricId, teacherUid);
     }
@@ -86,6 +92,10 @@ public class EvaluationService {
         return repository.getSubmissionBatch(batchId, teacherUid);
     }
 
+    public List<SubmissionBatchView> listSubmissionBatches(UUID assessmentId, String teacherUid) {
+        return repository.listSubmissionBatches(assessmentId, teacherUid);
+    }
+
     public SubmissionEvidenceView getSubmissionEvidence(UUID submissionId, String teacherUid) {
         return repository.getSubmissionEvidence(submissionId, teacherUid);
     }
@@ -110,6 +120,10 @@ public class EvaluationService {
 
     public GradingReviewView getGradingReview(UUID gradingRunId, String teacherUid) {
         return repository.getGradingReview(gradingRunId, teacherUid);
+    }
+
+    public GradingReviewView getLatestGradingReview(UUID submissionId, String teacherUid) {
+        return repository.getLatestGradingReview(submissionId, teacherUid);
     }
 
     public GradingReviewView updateGradingReview(
