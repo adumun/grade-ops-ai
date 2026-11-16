@@ -8,5 +8,6 @@ public record SubmissionSummary(
         String sourceDirectory,
         String status,
         int fileCount,
-        int textFileCount) {
+        int textFileCount,
+        UUID latestGradingRunId) {
 }
