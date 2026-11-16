@@ -14,6 +14,8 @@ public record GradingCommand(
         BigDecimal totalPoints,
         List<GradingCriterion> criteria,
         List<SubmissionFile> files,
+        List<String> omittedFilePaths,
+        boolean evidenceTruncated,
         String provider,
         String model) {
 }
