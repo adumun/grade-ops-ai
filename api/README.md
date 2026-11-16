@@ -175,13 +175,6 @@ GRADEOPS_GROQ_MODEL=llama-3.3-70b-versatile
 GRADEOPS_GEMINI_API_KEY=...
 GRADEOPS_GEMINI_MODEL=gemini-2.0-flash
 
-# Spring AI providers (select the configured provider with GRADEOPS_DEFAULT_PROVIDER)
-GRADEOPS_DEFAULT_PROVIDER=groq
-GRADEOPS_GROQ_API_KEY=...
-GRADEOPS_GROQ_MODEL=llama-3.3-70b-versatile
-GRADEOPS_GEMINI_API_KEY=...
-GRADEOPS_GEMINI_MODEL=gemini-2.0-flash
-
 # Firebase Admin SDK — path to service account JSON key file
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/firebase-adminsdk.json
 ```
@@ -210,8 +203,7 @@ createdb gradeops
 The backend starts on **http://localhost:8080**. From the repository root, install the capability module and run the single API application:
 
 ```bash
-./api/mvnw -f pom.xml -pl agents -Pbeta install -DskipTests
-./api/mvnw -f api/pom.xml -Pbeta spring-boot:run
+./api/mvnw -f pom.xml -pl api -am -Pbeta spring-boot:run
 ```
 
 ---
@@ -241,6 +233,20 @@ All public endpoints require a valid Firebase ID token in the `Authorization: Be
 | `POST` | `/auth/register` | Register a new teacher account (creates Firebase user + DB record) |
 | `POST` | `/auth/sign-out` | Invalidate the server-side session; client must discard the token |
 | `GET` | `/assessments` | List all assessments for the authenticated teacher |
+| `POST` | `/assessments/{id}/rubrics` | Create a rubric draft |
+| `GET` | `/assessments/{id}/rubrics` | List rubric versions |
+| `PUT` | `/assessments/{id}/rubrics/{rubricId}` | Edit a rubric draft |
+| `POST` | `/assessments/{id}/rubrics/{rubricId}/approve` | Approve an immutable rubric version |
+| `POST` | `/assessments/{id}/submission-batches` | Upload a ZIP of student projects (multipart `file`) |
+| `GET` | `/assessments/{id}/submission-batches` | List received batches |
+| `GET` | `/submission-batches/{batchId}` | Read batch and submissions |
+| `GET` | `/submissions/{submissionId}/evidence` | Inspect inventoried files and extracted text |
+| `POST` | `/submissions/{submissionId}/grading-runs` | Generate an evidence-backed AI proposal |
+| `GET` | `/submissions/{submissionId}/latest-review` | Recover latest teacher review |
+| `GET` | `/grading-runs/{runId}/review` | Read proposal and teacher edits |
+| `PUT` | `/grading-runs/{runId}/review` | Save teacher edits |
+| `POST` | `/grading-runs/{runId}/approve` | Explicitly approve the result |
+| `GET` | `/assessments/{id}/approved-results/export` | Export approved results as CSV |
 
 ### Internal Endpoints (`/internal/**`)
 
@@ -270,13 +276,15 @@ Managed by Flyway. Migrations live in `src/main/resources/db/migration/`.
 |-----------|-------------|
 | `V1__create_teacher_table.sql` | `teacher` table with `firebase_uid` as PK and unique email index |
 | `V2__add_pilot_flag_columns.sql` | `plan_type`, `related_party`, `offer_details`, `evidence_link`, `flag_set_by`, `flag_set_at` |
+| `V18__add_rubrics_and_submission_intake.sql` | Rubric versions, ZIP batches, submissions, file evidence, grading runs, teacher reviews and audit events |
 
 ---
 
 ## Docker
 
 ```bash
-docker build -t grade-ops-api .
+# Run from the repository root because the Dockerfile builds the api + agents reactor
+docker build -f api/Dockerfile -t grade-ops-api .
 
 docker run -p 8080:8080 \
   -e DATABASE_URL=jdbc:postgresql://host.docker.internal:5432/gradeops \
@@ -289,6 +297,23 @@ docker run -p 8080:8080 \
 ```
 
 ---
+
+## P0 code-review workflow
+
+The teacher-facing code-review flow is implemented as a vertical slice:
+
+1. Create or edit a rubric draft; criterion maxima must sum to the total.
+2. Approve the rubric version. Approved versions are immutable and tied to an assessment revision.
+3. Upload a ZIP. Intake is streaming and bounded (25 MB compressed, 500 entries, 100 MB expanded, 512 KB per extracted text file by default).
+4. ZIP paths are normalized and traversal/duplicate paths rejected. The intake never writes extracted files to disk and never executes student code.
+5. Supported text files are hashed and stored as evidence. Binary, unsupported and oversized files are inventoried but not sent to the grading model.
+6. The in-process grading capability returns a proposal per criterion with score, rationale, file/line references and uncertainty. Invalid or fabricated evidence references reject the proposal.
+7. The teacher edits and saves the result, then explicitly approves it. A later approval supersedes the previous approved result without deleting history.
+8. Only approved results are included in the CSV export. Approval does not publish grades to students.
+
+Useful endpoints are listed in the Public API table above. Upload limits are configurable with `GRADEOPS_MAX_ARCHIVE_BYTES`, `GRADEOPS_MAX_ARCHIVE_ENTRIES`, `GRADEOPS_MAX_UNCOMPRESSED_BYTES` and `GRADEOPS_MAX_TEXT_FILE_BYTES`.
+
+The backend is one Spring Boot deployable. The sibling `agents/` Maven module is included in-process; it is not started separately and does not expose an internal HTTP server. See [ADR-018](../docs/99-decisions/2026-11-16-p0-teacher-demo-modular-monolith.md).
 
 ## Related Modules and Repositories
 
