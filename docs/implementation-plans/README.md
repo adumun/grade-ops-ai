@@ -12,7 +12,8 @@ Task-by-task technical implementation plans for a specific, decision-backed cut 
 
 | Plan | Status | Governing decisions |
 |---|---|---|
-| [Assessment Authoring Operation Foundation](assessment-authoring-operation-foundation/README.md) | Planned — not yet implemented | [2026-07-28 ADRs](../99-decisions/README.md#active-decision-records) (Assessment Authoring Model, Authoring Operation Contract, Idempotency and Concurrency Strategy, Durable AI Operation Model) |
+| [P0 Teacher Demo](p0-teacher-demo/README.md) | In progress — P0, target 2026-11-20 | [P0 Modular Monolith ADR](../99-decisions/2026-11-16-p0-teacher-demo-modular-monolith.md) |
+| [Assessment Authoring Operation Foundation](assessment-authoring-operation-foundation/README.md) | Planned — not yet implemented; reuse applicable invariants, do not block P0 | [2026-07-28 ADRs](../99-decisions/README.md#active-decision-records) (Assessment Authoring Model, Authoring Operation Contract, Idempotency and Concurrency Strategy, Durable AI Operation Model) |
 
 ---
 
