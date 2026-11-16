@@ -463,8 +463,13 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
         if (!"DRAFT".equals(current.status())) {
             throw new EvaluationConflictException("Only a draft grading review can be edited");
         }
-        BigDecimal finalScore = validateAndCalculateScore(editedResult);
-        String editedJson = writeJson(editedResult);
+        List<RubricCriterion> canonicalCriteria = loadRubricCriteria(gradingRunId, teacherUid);
+        SubmissionEvidenceView evidence = getSubmissionEvidence(current.submissionId(), teacherUid);
+        GradingProposal canonicalResult = canonicalizeProposal(editedResult, canonicalCriteria, evidence.files());
+        BigDecimal finalScore = canonicalResult.criteria().stream()
+                .map(GradingCriterionSuggestion::suggestedPoints)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        String editedJson = writeJson(canonicalResult);
         int updated = jdbc.update("""
                 UPDATE grading_reviews
                 SET edited_result = ?::jsonb, final_score = ?, teacher_comment = ?, updated_at = now()
@@ -474,7 +479,7 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
             throw new EvaluationConflictException("Grading review changed while the teacher edit was being saved");
         }
         insertReviewEvent(current.id(), teacherUid, "TEACHER_EDITED", Map.of(
-                "editedResult", editedResult,
+                "editedResult", canonicalResult,
                 "teacherComment", teacherComment == null ? "" : teacherComment,
                 "finalScore", finalScore));
         return getGradingReview(gradingRunId, teacherUid);
@@ -534,22 +539,101 @@ public class JdbcEvaluationRepositoryAdapter implements EvaluationRepositoryPort
                 """, UUID.randomUUID(), reviewId, actorUid, eventType, writeJson(payload));
     }
 
-    private static BigDecimal validateAndCalculateScore(GradingProposal proposal) {
-        if (proposal == null || proposal.criteria() == null || proposal.criteria().isEmpty()) {
-            throw new EvaluationConflictException("At least one criterion result is required");
+    private List<RubricCriterion> loadRubricCriteria(UUID gradingRunId, String teacherUid) {
+        try {
+            String criteriaJson = jdbc.queryForObject("""
+                    SELECT rv.criteria::text
+                    FROM grading_runs gr
+                    JOIN assessment_rubric_versions rv ON rv.id = gr.rubric_version_id
+                    JOIN assessments a ON a.id = gr.assessment_id
+                    WHERE gr.id = ? AND a.teacher_uid = ?
+                    """, String.class, gradingRunId, teacherUid);
+            return readCriteria(criteriaJson);
+        } catch (EmptyResultDataAccessException exception) {
+            throw new ResourceNotFoundException(gradingRunId.toString());
         }
+    }
+
+    private static GradingProposal canonicalizeProposal(
+            GradingProposal proposal,
+            List<RubricCriterion> rubricCriteria,
+            List<SubmissionFileEvidence> submissionFiles) {
+        if (proposal == null || proposal.criteria() == null
+                || proposal.criteria().size() != rubricCriteria.size()
+                || proposal.overallFeedback() == null || proposal.overallFeedback().isBlank()
+                || proposal.uncertaintySummary() == null || proposal.uncertaintySummary().isBlank()) {
+            throw new EvaluationConflictException("A complete teacher review is required for every rubric criterion");
+        }
+
+        Map<String, RubricCriterion> rubricById = rubricCriteria.stream()
+                .collect(java.util.stream.Collectors.toMap(RubricCriterion::id, criterion -> criterion));
+        Map<String, SubmissionFileEvidence> filesByPath = submissionFiles.stream()
+                .filter(file -> "TEXT".equals(file.classification()))
+                .collect(java.util.stream.Collectors.toMap(SubmissionFileEvidence::path, file -> file));
         Set<String> seen = new HashSet<>();
-        BigDecimal total = BigDecimal.ZERO;
-        for (GradingCriterionSuggestion criterion : proposal.criteria()) {
-            if (criterion == null || criterion.criterionId() == null || !seen.add(criterion.criterionId())
-                    || criterion.maxPoints() == null || criterion.suggestedPoints() == null
-                    || criterion.suggestedPoints().signum() < 0
-                    || criterion.suggestedPoints().compareTo(criterion.maxPoints()) > 0) {
-                throw new EvaluationConflictException("Criterion scores are invalid or exceed the rubric maximum");
+        List<String> reviewFlags = new ArrayList<>(
+                proposal.reviewFlags() == null ? List.of() : proposal.reviewFlags());
+        List<GradingCriterionSuggestion> canonicalCriteria = new ArrayList<>();
+        for (GradingCriterionSuggestion suggestion : proposal.criteria()) {
+            if (suggestion == null || suggestion.criterionId() == null || !seen.add(suggestion.criterionId())) {
+                throw new EvaluationConflictException("Review contains a missing or duplicate rubric criterion");
             }
-            total = total.add(criterion.suggestedPoints());
+            RubricCriterion rubric = rubricById.get(suggestion.criterionId());
+            if (rubric == null || suggestion.suggestedPoints() == null
+                    || suggestion.suggestedPoints().signum() < 0
+                    || suggestion.suggestedPoints().compareTo(rubric.maxPoints()) > 0
+                    || suggestion.rationale() == null || suggestion.rationale().isBlank()) {
+                throw new EvaluationConflictException("Review contains a score or rationale outside the approved rubric");
+            }
+
+            List<GradingEvidenceReference> evidence = suggestion.evidence() == null
+                    ? List.of() : suggestion.evidence();
+            if (evidence.isEmpty()) {
+                reviewFlags.add("MISSING_EVIDENCE:" + rubric.id());
+            }
+            for (GradingEvidenceReference reference : evidence) {
+                verifyTeacherEvidence(reference, filesByPath);
+            }
+            canonicalCriteria.add(new GradingCriterionSuggestion(
+                    rubric.id(),
+                    rubric.name(),
+                    rubric.maxPoints(),
+                    suggestion.suggestedPoints(),
+                    suggestion.rationale(),
+                    evidence,
+                    suggestion.uncertainty() == null ? "" : suggestion.uncertainty(),
+                    suggestion.confidence() == null ? "TEACHER_REVIEWED" : suggestion.confidence()));
         }
-        return total;
+        return new GradingProposal(
+                canonicalCriteria,
+                proposal.overallFeedback(),
+                proposal.uncertaintySummary(),
+                reviewFlags.stream().distinct().toList());
+    }
+
+    private static void verifyTeacherEvidence(
+            GradingEvidenceReference reference, Map<String, SubmissionFileEvidence> filesByPath) {
+        if (reference == null || reference.filePath() == null || reference.filePath().isBlank()
+                || reference.excerpt() == null || reference.excerpt().isBlank()
+                || reference.lineStart() < 1 || reference.lineEnd() < reference.lineStart()) {
+            throw new EvaluationConflictException("Evidence references must include a valid file and line range");
+        }
+        SubmissionFileEvidence file = filesByPath.get(reference.filePath());
+        if (file == null || file.extractedText() == null) {
+            throw new EvaluationConflictException("Evidence must reference a text file from this submission");
+        }
+        String[] lines = file.extractedText().split("\\R", -1);
+        if (reference.lineEnd() > lines.length) {
+            throw new EvaluationConflictException("Evidence line range is outside the submitted file");
+        }
+        String excerpt = String.join("\\n", Arrays.copyOfRange(lines, reference.lineStart() - 1, reference.lineEnd()));
+        if (!normalizeWhitespace(excerpt).contains(normalizeWhitespace(reference.excerpt()))) {
+            throw new EvaluationConflictException("Evidence excerpt does not match the submitted file");
+        }
+    }
+
+    private static String normalizeWhitespace(String value) {
+        return value == null ? "" : value.replaceAll("\\\\s+", " ").strip();
     }
 
     private static GradingReviewView mapGradingReview(ResultSet rs) throws SQLException {
