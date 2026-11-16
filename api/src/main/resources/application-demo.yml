@@ -24,6 +24,7 @@ spring:
 
 app:
   agents:
+    enabled: ${GRADEOPS_AI_ENABLED:true}
     llm:
       default-provider: ${GRADEOPS_DEFAULT_PROVIDER:gemini}
       cost-per-1k-tokens:
