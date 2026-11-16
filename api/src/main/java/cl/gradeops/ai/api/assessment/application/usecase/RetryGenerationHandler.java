@@ -1,7 +1,6 @@
 package cl.gradeops.ai.api.assessment.application.usecase;
 
 import cl.gradeops.ai.api.agentclient.AgentClientException;
-import cl.gradeops.ai.api.agentclient.AgentClientProperties;
 import cl.gradeops.ai.api.agentclient.AssessmentCommand;
 import cl.gradeops.ai.api.assessment.application.command.RetryGenerationCommand;
 import cl.gradeops.ai.api.assessment.application.exception.NoActiveOperationToRetryException;
@@ -46,7 +45,7 @@ public class RetryGenerationHandler implements RetryGenerationUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(RetryGenerationHandler.class);
     private static final AiOperationType OPERATION_TYPE = AiOperationType.CREATE_INITIAL_REVISION;
-    private static final Duration INDETERMINATE_THRESHOLD = AgentClientProperties.READ_TIMEOUT.multipliedBy(5);
+    private static final Duration INDETERMINATE_THRESHOLD = AiOperationTiming.INDETERMINATE_AFTER;
 
     private final AssessmentRepositoryPort assessmentRepository;
     private final AssessmentBriefRepositoryPort assessmentBriefRepository;
