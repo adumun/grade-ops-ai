@@ -115,7 +115,7 @@ require browser infrastructure, services, credentials, and/or real data.
 |------|---------|
 | Node.js | 18+ |
 | Java | 21 |
-| Maven Wrapper | included (`./mvnw`) |
+| Maven Wrapper | included (`./api/mvnw`) |
 | PostgreSQL | 15+ (local instance) |
 | Terraform | 1.5+ (infra only) |
 | `gcloud` CLI | latest (for Vertex AI / Secret Manager) |
