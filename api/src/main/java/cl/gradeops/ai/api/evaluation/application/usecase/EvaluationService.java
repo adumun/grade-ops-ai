@@ -125,6 +125,49 @@ public class EvaluationService {
         return repository.listApprovedReviews(assessmentId, teacherUid);
     }
 
+    public byte[] exportApprovedResultsCsv(UUID assessmentId, String teacherUid) {
+        List<GradingReviewView> reviews = repository.listApprovedReviews(assessmentId, teacherUid);
+        StringBuilder csv = new StringBuilder("\\uFEFF");
+        csv.append("learner_label,submission_id,criterion_name,max_points,final_points,rationale,evidence,uncertainty,confidence,overall_feedback,teacher_comment,approved_by,approved_at,provider,model,prompt_version\\r\\n");
+        for (GradingReviewView review : reviews) {
+            if (review.editedResult() == null || review.editedResult().criteria() == null) {
+                continue;
+            }
+            for (var criterion : review.editedResult().criteria()) {
+                String evidence = criterion.evidence() == null ? "" : criterion.evidence().stream()
+                        .map(item -> item.filePath() + ":" + item.lineStart() + "-" + item.lineEnd()
+                                + " [" + item.excerpt() + "]")
+                        .collect(java.util.stream.Collectors.joining(" | "));
+                var execution = review.execution();
+                csv.append(csv(review.learnerLabel())).append(',')
+                        .append(csv(review.submissionId().toString())).append(',')
+                        .append(csv(criterion.criterionName())).append(',')
+                        .append(csv(criterion.maxPoints().toPlainString())).append(',')
+                        .append(csv(criterion.suggestedPoints().toPlainString())).append(',')
+                        .append(csv(criterion.rationale())).append(',')
+                        .append(csv(evidence)).append(',')
+                        .append(csv(criterion.uncertainty())).append(',')
+                        .append(csv(criterion.confidence())).append(',')
+                        .append(csv(review.editedResult().overallFeedback())).append(',')
+                        .append(csv(review.teacherComment())).append(',')
+                        .append(csv(review.approvedBy())).append(',')
+                        .append(csv(review.approvedAt() == null ? "" : review.approvedAt().toString())).append(',')
+                        .append(csv(execution == null ? "" : execution.provider())).append(',')
+                        .append(csv(execution == null ? "" : execution.model())).append(',')
+                        .append(csv(execution == null ? "" : execution.promptVersion()))
+                        .append("\\r\\n");
+            }
+        }
+        return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private static String csv(String value) {
+        if (value == null) {
+            return "\"\"";
+        }
+        return "\"" + value.replace("\"", "\"\"") + "\"";
+    }
+
     private static void validateRubric(CreateRubricDraftCommand command) {
         if (command == null || command.title() == null || command.title().isBlank()) {
             throw new InvalidEvaluationRequestException("Rubric title is required");
