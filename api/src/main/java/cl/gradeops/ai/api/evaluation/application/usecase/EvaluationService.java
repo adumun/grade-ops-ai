@@ -3,6 +3,12 @@ package cl.gradeops.ai.api.evaluation.application.usecase;
 import cl.gradeops.ai.api.evaluation.application.command.CreateRubricDraftCommand;
 import cl.gradeops.ai.api.evaluation.application.exception.EvaluationConflictException;
 import cl.gradeops.ai.api.evaluation.application.exception.InvalidEvaluationRequestException;
+import cl.gradeops.ai.api.evaluation.application.exception.GradingAgentPortException;
+import cl.gradeops.ai.api.evaluation.application.model.GradingExecutionMetadata;
+import cl.gradeops.ai.api.evaluation.application.model.GradingProposal;
+import cl.gradeops.ai.api.evaluation.application.model.GradingReviewView;
+import cl.gradeops.ai.api.evaluation.application.port.out.GradingAgentPort;
+import cl.gradeops.ai.api.evaluation.application.model.GradingContext;
 import cl.gradeops.ai.api.evaluation.application.model.RubricCriterion;
 import cl.gradeops.ai.api.evaluation.application.model.RubricView;
 import cl.gradeops.ai.api.evaluation.application.model.SubmissionBatchView;
@@ -14,6 +20,7 @@ import cl.gradeops.ai.api.evaluation.application.port.out.SubmissionArchiveIntak
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,13 +32,16 @@ public class EvaluationService {
     private final EvaluationRepositoryPort repository;
     private final SubmissionArchiveIntakePort archiveIntake;
     private final long maxArchiveBytes;
+    private final GradingAgentPort gradingAgent;
 
     public EvaluationService(
             EvaluationRepositoryPort repository,
             SubmissionArchiveIntakePort archiveIntake,
+            GradingAgentPort gradingAgent,
             long maxArchiveBytes) {
         this.repository = repository;
         this.archiveIntake = archiveIntake;
+        this.gradingAgent = gradingAgent;
         this.maxArchiveBytes = maxArchiveBytes;
     }
 
@@ -78,6 +88,41 @@ public class EvaluationService {
 
     public SubmissionEvidenceView getSubmissionEvidence(UUID submissionId, String teacherUid) {
         return repository.getSubmissionEvidence(submissionId, teacherUid);
+    }
+
+    public GradingReviewView gradeSubmission(UUID submissionId, String teacherUid) {
+        GradingContext context = repository.getGradingContext(submissionId, teacherUid);
+        Instant startedAt = Instant.now();
+        UUID gradingRunId = repository.startGradingRun(context, teacherUid, startedAt);
+        try {
+            var result = gradingAgent.grade(context);
+            return repository.completeGradingRun(gradingRunId, result, teacherUid);
+        } catch (GradingAgentPortException exception) {
+            repository.failGradingRun(gradingRunId, exception.execution());
+            throw exception;
+        } catch (RuntimeException exception) {
+            repository.failGradingRun(gradingRunId, new GradingExecutionMetadata(
+                    null, null, null, null, null, null, null, null,
+                    "FAILED", "UNEXPECTED_EVALUATION_FAILURE", startedAt, Instant.now()));
+            throw exception;
+        }
+    }
+
+    public GradingReviewView getGradingReview(UUID gradingRunId, String teacherUid) {
+        return repository.getGradingReview(gradingRunId, teacherUid);
+    }
+
+    public GradingReviewView updateGradingReview(
+            UUID gradingRunId, String teacherUid, GradingProposal editedResult, String teacherComment) {
+        return repository.updateGradingReview(gradingRunId, teacherUid, editedResult, teacherComment);
+    }
+
+    public GradingReviewView approveGradingReview(UUID gradingRunId, String teacherUid) {
+        return repository.approveGradingReview(gradingRunId, teacherUid);
+    }
+
+    public List<GradingReviewView> listApprovedReviews(UUID assessmentId, String teacherUid) {
+        return repository.listApprovedReviews(assessmentId, teacherUid);
     }
 
     private static void validateRubric(CreateRubricDraftCommand command) {
